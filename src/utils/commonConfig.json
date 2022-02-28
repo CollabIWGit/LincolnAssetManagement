@@ -1,0 +1,16 @@
+{
+    "Page" : {
+        "HomePage" : "Lincoln-Home.aspx",
+        "AddCase": "Case-Management.aspx",
+        "CaseDashboard" : "Case-List.aspx",
+        "AddAssets" : "Asset-Mngt.aspx",
+        "AssetDashboard" : "Asset-Mngt-Dashboard.aspx"
+    },
+    "List" : {
+        "TypeOfAssetList" : "Types Of Assets",
+        "FieldsRequiredList" : "Fields For Each Type of Assets",
+        "OfficeList" : "Offices",
+        "BuildingList" : "Buildings"
+    },
+    "baseUrl" : "https://80e4-102-112-159-150.ngrok.io"
+}

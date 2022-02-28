@@ -1,12 +1,13 @@
 {
   "@microsoft/generator-sharepoint": {
-    "isCreatingSolution": true,
+    "isCreatingSolution": false,
     "environment": "spo",
     "version": "1.12.1",
     "libraryName": "lincoln-asset-mgt",
     "libraryId": "74638d40-40dd-4425-84f1-84a3958b3037",
     "packageManager": "npm",
     "isDomainIsolated": false,
+    "plusBeta": false,
     "componentType": "webpart"
   }
 }

@@ -9,10 +9,40 @@
           "manifest": "./src/webparts/addAssets/AddAssetsWebPart.manifest.json"
         }
       ]
+    },
+    "add-assets-dashboard-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/addAssetsDashboard/AddAssetsDashboardWebPart.js",
+          "manifest": "./src/webparts/addAssetsDashboard/AddAssetsDashboardWebPart.manifest.json"
+        }
+      ]
+    },
+    "lincoln-home-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/lincolnHome/LincolnHomeWebPart.js",
+          "manifest": "./src/webparts/lincolnHome/LincolnHomeWebPart.manifest.json"
+        }
+      ]
     }
   },
-  "externals": {},
+  "externals": {
+    "jquery": {
+      "path": "node_modules/jquery/dist/jquery.min.js",
+      "globalName": "jQuery"
+    },
+    "bootstrap": {
+      "path": "node_modules/bootstrap/dist/js/bootstrap.bundle.min.js",
+      "globalName": "bootstrap",
+      "globalDependencies": [
+        "jquery"
+      ]
+    }
+  },
   "localizedResources": {
-    "AddAssetsWebPartStrings": "lib/webparts/addAssets/loc/{locale}.js"
+    "AddAssetsWebPartStrings": "lib/webparts/addAssets/loc/{locale}.js",
+    "AddAssetsDashboardWebPartStrings": "lib/webparts/addAssetsDashboard/loc/{locale}.js",
+    "LincolnHomeWebPartStrings": "lib/webparts/lincolnHome/loc/{locale}.js"
   }
 }

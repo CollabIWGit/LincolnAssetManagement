@@ -1,0 +1,31 @@
+#spSiteHeader {
+    display: none;
+  }
+  #spCommandBar {
+    display: none;
+  }
+  .webPartContainer{
+      display: none!important;
+  }
+  #spLeftNav{
+      display:none;
+  }
+ 
+  .CanvasZone.row.CanvasZone--alignment.CanvasZone--noMargin.CanvasZone--read {
+    padding: 0px;
+  }
+ 
+  .CanvasZone.row.CanvasZone--alignment.CanvasZone--noMargin.CanvasZone--read > div {
+    width: 100%;
+    display: flex;
+    max-width: 100%;
+  }
+ 
+  .CanvasSection.CanvasSection-col.CanvasSection-sm12.CanvasSection--read.CanvasSection-xl12 {
+    padding: 0px;
+  }
+ 
+  .CanvasSection.CanvasSection-col.CanvasSection-sm12.CanvasSection--read.CanvasSection-xl12 > div {
+    padding: 0px;
+    margin: 0px;
+  }
