@@ -89,8 +89,10 @@ export interface IOffices {
 
 export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAddAssetsDashboardWebPartProps> {
   private static accessToken: string = "";
+  private ListOfAssets: ITypeOfAssetList[];
   private ListOfBuildings: IBuildings[];
   private ListOfOffices: IOffices[];
+  private ListOfOfficeFiltered: IOffices[];
 
   public render(): void {
     this.domElement.innerHTML = `
@@ -166,40 +168,63 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
           </div>
           <div class="filters">
             <div class="form-row">
-              <div class="col-md-6">
-                <div class="input-group input-group-sm mb-3" id="AssetName">
-                  <div class="input-group-prepend">
-                    <span class="input-group-text" id="inputGroup-sizing-sm">Asset Name</span>
-                  </div>
-                  <input type="text" class="form-control" id="idAssetName" autocomplete="off"/>
+              <div class="col-md-4">
+                <div>
+                  <h7>Asset Reference No</h7>
+                </div>
+                <div class="input-group">
+                  <input list="idAssetReferenceNo" id="myListAssetReferenceNo" name="myBrowserAssetReferenceNo" autocomplete="off"/>
+                  <datalist id="idAssetReferenceNo">
+                  </datalist>
                 </div>
               </div>
-              <div class="col-md-6">
-                <div class="input-group input-group-sm mb-3" id="AssetRefNo">
-                  <div class="input-group-prepend">
-                    <span class="input-group-text" id="inputGroup-sizing-sm">Asset Ref No</span>
-                  </div>
-                  <input type="text" class="form-control" id="idAssetRefNo" autocomplete="off"/>
+              <div class="col-md-4">
+                <div>
+                  <h7>Asset Name</h7>
+                </div>
+                <div class="input-group">
+                  <input list="idAssetName" id="myListAssetName" name="myBrowserAssetName" autocomplete="off"/>
+                  <datalist id="idAssetName">
+                  </datalist>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div>
+                  <h7>Type Of Asset</h7>
+                </div>
+                <div class="input-group">
+                  <input list="idTypeOfAsset" id="myListTypeOfAsset" name="myBrowserTypeOfAsset" autocomplete="off"/>
+                  <datalist id="idTypeOfAsset">
+                  </datalist>
                 </div>
               </div>
             </div>
             <div class="form-row">
               <div class="col-md-6">
-                <div class="input-group input-group-sm mb-3" id="TypeOfAssets">
-                  <div class="input-group-prepend">
-                    <span class="input-group-text" id="inputGroup-sizing-sm">Type of Assets</span>
-                  </div>
-                  <input type="text" class="form-control" id="idTypeOfAssets" autocomplete="off"/>
+                <div>
+                  <h7>Location</h7>
+                </div>
+                <div class="input-group">
+                  <input list="idLocation" id="myListLocation" name="myBrowserLocation" autocomplete="off"/>
+                  <datalist id="idLocation">
+                  </datalist>
                 </div>
               </div>
               <div class="col-md-6">
-                <div class="input-group input-group-sm mb-3" id="Office">
-                  <div class="input-group-prepend">
-                    <span class="input-group-text" id="inputGroup-sizing-sm">Office</span>
-                  </div>
-                  <input type="text" class="form-control" id="idOffice" autocomplete="off"/>
+                <div>
+                  <h7>Office</h7>
+                </div>
+                <div class="input-group">
+                  <input list="idOffice" id="myListOffice" name="myBrowserOffice" autocomplete="off"/>
+                  <datalist id="idOffice">
+                  </datalist>
                 </div>
               </div>
+            </div>
+          </div>
+          <div class="form-row btnFilterRow">
+            <div class="col-md-1 offset-11">
+              <button type="button" class="btn btn-sm btn-secondary" id="btnFilter">Filter</button>
             </div>
           </div>
           <div id="divContainer">
@@ -209,11 +234,24 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
     </div>`;
     $("#cover").fadeOut(1750);
     // SidebarDetails.sidebarMenu(this.context.pageContext.web.absoluteUrl);
-    this._getAssetsAsync();
-    this._getBuildingsList();
-    this._getOfficesList();
+    this._getAccessToken();
+    this._getTypeOfAssetList();
+    this._getOfficesListFiltered();
+    this._getLocationList();
+    this.AddEventListeners();
     this.collapse();
     this.navTriggers();
+    this._navigateToAddAssetForm();
+  }
+
+  private AddEventListeners(): any {
+    document.getElementById('btnFilter').addEventListener('click', () => this._displayAssets());
+  }
+
+  private _navigateToAddAssetForm() {
+    $('#btnAdd').on('click', () => {
+      Navigation.navigate(`${this.context.pageContext.web.absoluteUrl}/SitePages/${commonConfig.Page.AddAssets}`, true);
+    });
   }
 
   public navTriggers() {
@@ -284,7 +322,113 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
     });
   }
 
-  private _getAccessToken() {
+  //#region Filters
+  private _getListOfRefNo(listofAllAssets: IDynamicField[]) {
+    let html: string = '';
+    listofAllAssets.forEach((item: IDynamicField) => {
+      html += `
+      <option value="${item.ReferenceNumber}">${item.ReferenceNumber}</option>`;
+    });
+
+    const listContainer: Element = this.domElement.querySelector('#idAssetReferenceNo');
+    listContainer.innerHTML = html;
+  }
+
+  private _getListOfAssetName(listofAllAssets: IDynamicField[]) {
+    let html: string = '';
+    listofAllAssets.forEach((item: IDynamicField) => {
+      html += `
+      <option value="${item.Name}">${item.Name}</option>`;
+    });
+
+    const listContainer: Element = this.domElement.querySelector('#idAssetName');
+    listContainer.innerHTML = html;
+  }
+
+  private _getTypeOfAssetList() {
+    let html: string = '';
+    this.context.spHttpClient.get(`${this.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('${commonConfig.List.TypeOfAssetList}')/items`, SPHttpClient.configurations.v1)
+      .then(response => {
+        return response.json()
+          .then((items: any): void => {
+            this.ListOfAssets = items.value;
+
+            this.ListOfAssets.forEach((item: ITypeOfAssetList) => {
+              html += `
+              <option value="${item.Title}">${item.Title}</option>`;
+            });
+  
+            const listContainer: Element = this.domElement.querySelector('#idTypeOfAsset');
+            listContainer.innerHTML = html;
+          });
+      });
+  }
+
+  private _getOfficesListFiltered() {
+    let html: string = '';
+    this.context.spHttpClient.get(`${this.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('${commonConfig.List.OfficeList}')/items`, SPHttpClient.configurations.v1)
+      .then(response => {
+        return response.json()
+          .then((items: any): void => {
+            this.ListOfOffices = items.value;
+
+            this.ListOfOfficeFiltered = this.ListOfOffices.filter((obj, pos, arr) => {
+              return arr.map(mapObj =>
+                mapObj.Title).indexOf(obj.Title) == pos;
+            });
+
+            this.ListOfOfficeFiltered.forEach((item: IOffices) => {
+              html += `
+              <option value="${item.Title}">${item.Title}</option>`;
+            });
+
+            const listContainer: Element = this.domElement.querySelector('#idOffice');
+            listContainer.innerHTML = html;
+          });
+      });
+  }
+
+  private _getLocationList() {
+    let html: string = '';
+    this.context.spHttpClient.get(`${this.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('${commonConfig.List.BuildingList}')/items`, SPHttpClient.configurations.v1)
+      .then(response => {
+        return response.json()
+          .then((items: any): void => {
+            this.ListOfBuildings = items.value;
+
+            this.ListOfBuildings.forEach((item: IBuildings) => {
+              html += `
+              <option value="${item.Location}">${item.Location}</option>`;
+            });
+  
+            const listContainer: Element = this.domElement.querySelector('#idLocation');
+            listContainer.innerHTML = html;
+          });
+      });
+  }
+
+  private _displayAssets() {
+    var assetRefNoValue = (<HTMLInputElement>document.getElementById('myListAssetReferenceNo')).value;
+    var assetNameValue = (<HTMLInputElement>document.getElementById('myListAssetName')).value;
+    var typeOfAssetValue = (<HTMLInputElement>document.getElementById('myListTypeOfAsset')).value;
+    var locationValue = (<HTMLInputElement>document.getElementById('myListLocation')).value;
+    var officeValue = (<HTMLInputElement>document.getElementById('myListOffice')).value;
+
+    $.ajax({
+      type: 'GET',
+      //To change URL for API when ready
+      url: commonConfig.baseUrl + `/api/Asset/GetAssetsByFilters?refNo=${assetRefNoValue}&assetName=${assetNameValue}&typeOfAsset=${typeOfAssetValue}&location=${locationValue}&office=${officeValue}`,
+      success: (result) => {
+        this._renderTable(result);
+      },
+      error: (result) => {
+        console.log(result);
+      }
+    });
+  }
+  //#endregion
+
+  private _getAccessTokenForDisplay() {
     var body = {
       grant_type: 'password',
       client_id: 'myClientId',
@@ -305,8 +449,49 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
     });
   }
 
+  private _getAccessToken(): void {
+    var body = {
+      grant_type: 'password',
+      client_id: 'myClientId',
+      client_secret: 'myClientSecret',
+      username: "roukaiyan@frci.net",
+      password: "Pa$$w0rd"
+    };
+
+    $.ajax({
+      type: 'POST',
+      url: commonConfig.baseUrl + '/token',
+      dataType: 'json',
+      data: body,
+      contentType: 'application/x-www-form-urlencoded',
+      success: (result) => {
+        this._getAllAssets(result["access_token"]);
+      },
+      error: (result) => {
+        console.log(result);
+      }
+    });
+  }
+
+  private _getAllAssets(token: string): void {
+    $.ajax({
+      type: 'GET',
+      url: commonConfig.baseUrl + '/api/Asset/GetAssets',
+      headers: {
+        Authorization: 'Bearer ' + token
+      },
+      success: (result) => {
+        this._getListOfRefNo(result);
+        this._getListOfAssetName(result);
+      },
+      error: (result) => {
+        console.log(result);
+      }
+    });
+  }
+
   private async _getAssets() {
-    let token = await this._getAccessToken();
+    let token = await this._getAccessTokenForDisplay();
     return $.ajax({
       type: 'GET',
       url: commonConfig.baseUrl + '/api/Asset/GetAssets',
@@ -461,7 +646,6 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
       //Click delete btn
       $(".delete").on('click', 'button', function (){
         var data = table.row($(this).parents('tr')).data();
-        var refNo = data[1];
         $.ajax({
           type: 'DELETE',
           data: {'action': 'delete'},

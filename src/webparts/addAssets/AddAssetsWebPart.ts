@@ -18,6 +18,8 @@ import * as commonConfig from "../../utils/commonConfig.json";
 import { sidebarDetails } from "../../utils/sidebarDetails";
 let SidebarDetails = new sidebarDetails();
 
+var fileInfos = [];
+
 //#region Interfaces
 export interface IAddAssetsWebPartProps {
   description: string;
@@ -188,7 +190,7 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
             </div>
           </div>
           <div class="form-row">
-          <div class="col-md-6">
+            <div class="col-md-6">
               <div>
                 <h7>Office</h7>
               </div>
@@ -312,6 +314,7 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
     </div>`;
 
     $("#cover").fadeOut(1750);
+
     this._renderTypeOfAssetListAsync();
     this._renderFieldRequiredListAsync();
     this._getOfficesList();
@@ -326,7 +329,7 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
   private AddEventListeners(): any {
     document.getElementById('btnSubmit').addEventListener('click', () => this._submit());
     document.getElementById('btnCancel').addEventListener('click', () => this._cancel());
-    document.getElementById('customFile').addEventListener('change', () => this._uploadToAttachmentTable());
+    document.getElementById('customFile').addEventListener('change', () => this.blob());
     document.getElementById('servicingRequired').addEventListener('change', () => this._checkIfServicingRequiredChecked());
     document.getElementById('servicingNotRequired').addEventListener('change', () => this._checkIfServicingNotRequiredChecked());
     document.getElementById('typeOfAssetList').addEventListener('change', () => this._renderFieldRequiredList(this.arrFieldsRequired));
@@ -729,6 +732,7 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
     var myParm = queryParms.get("refNo"); 
     if (myParm) {
       var refNo = myParm.trim(); 
+      console.log("refNo" + refNo);
     }
 
     $.ajax({
@@ -830,28 +834,78 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
   }
 
   private _uploadToAttachmentTable(): void {
-    var myFile = (<HTMLInputElement>document.getElementById('customFile')).files;
+    // var myFile = (<HTMLInputElement>document.getElementById('customFile')).files;
     let html: string = "";
+    // console.log(myFile);
 
     this._checkAttachmentTable();
 
-    for (var i = 0, file; file = myFile[i]; i++) {
+    // for (var i = 0, file; file = fileInfos[i]; i++) {
+    //   console.log(file);
+    //   $('#attachmentTable').show();
+    //   html += `<tr><td class="th-lg" scope="row">${file.name}</td>
+    //   <td>
+    //     <ul class="list-inline m-0">
+    //       <li class="list-inline-item">
+    //         <button class="btn btn-secondary btn-sm rounded-circle" type="button" data-toggle="tooltip" data-placement="top" title="View"><i class="fa fa-eye"></i></button>
+    //       </li>
+    //       <li class="list-inline-item">
+    //         <button class="btn btn-secondary btn-sm rounded-circle" type="button" data-toggle="tooltip" data-placement="top" title="Delete"><i class="fa fa-trash"></i></button>
+    //       </li>
+    //     </ul>
+    //   </td></tr>`;
+    // }
+
+   fileInfos.forEach((file: any) =>{
       $('#attachmentTable').show();
+
+      var fileNameNoSpace = file.name.replace(/ /g, "");
+
       html += `<tr><td class="th-lg" scope="row">${file.name}</td>
       <td>
         <ul class="list-inline m-0">
           <li class="list-inline-item">
             <button class="btn btn-secondary btn-sm rounded-circle" type="button" data-toggle="tooltip" data-placement="top" title="View"><i class="fa fa-eye"></i></button>
           </li>
-          <li class="list-inline-item">
-            <button class="btn btn-secondary btn-sm rounded-circle" type="button" data-toggle="tooltip" data-placement="top" title="Delete"><i class="fa fa-trash"></i></button>
+          <li class="list-inline-item delete">
+            <button class="btn btn-secondary btn-sm rounded-circle" id="btn_${fileNameNoSpace}" type="button" data-toggle="tooltip" data-placement="top" title="Delete"><i class="fa fa-trash"></i></button>
           </li>
         </ul>
       </td></tr>`;
-    }
+   });
 
+  //  this.clickOnDelete();
+    
     const listContainer: Element = this.domElement.querySelector('#tableAttachmentContainer');
     listContainer.innerHTML = html;
+  }
+
+  private blob() {
+    var input = (<HTMLInputElement>document.getElementById("customFile"));
+    var fileCount = input.files.length;
+    for (var i = 0; i < fileCount; i++) {
+      var fileName = input.files[i].name;
+      var file = input.files[i];
+      var reader = new FileReader();
+      reader.onload = ((file1) => {
+        return (e) => {
+          fileInfos.push({
+            "name": file1.name,
+            "content": e.target.result
+          });
+          console.log(fileInfos);
+          this._uploadToAttachmentTable();
+        };
+      })(file);
+      reader.readAsArrayBuffer(file);
+    }
+  }
+
+  private clickOnDelete() {
+    //Click delete btn
+    $(".delete").on('click', 'button', function (){
+      console.log("Click delete: " + $(this).attr('id'));
+    });
   }
 
   private _checkAttachmentTable(): void {

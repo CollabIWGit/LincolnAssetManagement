@@ -132,13 +132,11 @@ export default class LincolnHomeWebPart extends BaseClientSideWebPart<ILincolnHo
 	}
 
   private _navigateToCaseMgt() {
-    var url = new URL("https://frcidevtest.sharepoint.com/sites/Lincoln/SitePages/Case-List.aspx");
-    Navigation.navigate(url.toString(), true);
+    Navigation.navigate(`${this.context.pageContext.web.absoluteUrl}/SitePages/${commonConfig.Page.CaseDashboard}`, true);
   }
 
   private _navigateToAssetMgt() {
-    var url = new URL("https://frcidevtest.sharepoint.com/sites/Lincoln/SitePages/Asset-Mngt-Dashboard.aspx?");
-    Navigation.navigate(url.toString(), true);
+    Navigation.navigate(`${this.context.pageContext.web.absoluteUrl}/SitePages/${commonConfig.Page.AssetDashboard}`, true);
   }
 
   public navTriggers() {
