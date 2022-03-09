@@ -13,7 +13,8 @@ require('../../../node_modules/bootstrap/dist/css/bootstrap.min.css');
 require('../../../node_modules/@fortawesome/fontawesome-free/css/all.min.css');
 require('../../styles/dashboardcss.css');
 require('../../styles/spcommon.css');
-require('../../styles/navbar.css');
+// require('../../styles/navbar.css');
+require('../../styles/test.css');
 
 import * as commonConfig from "../../utils/commonConfig.json";
 import { sidebarDetails } from "../../utils/sidebarDetails";
@@ -95,143 +96,204 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
   private ListOfOfficeFiltered: IOffices[];
 
   public render(): void {
-    this.domElement.innerHTML = `
-    <div id="cover"> <span class="glyphicon glyphicon-refresh w3-spin preloader-Icon"></span> loading...</div>
-    <div class="wrapper d-flex align-items-stretch">
-      <div class="nav-placeholder">
-        <nav id="sidebar">
-          <div class="custom-menu">
-            <button type="button" id="sidebarCollapse" class="btn btn-primary">
-              <i class="fa fa-bars"></i>
-              <span class="sr-only">Toggle Menu</span>
-          </div>
-          <img id="imgLogo" src="${this.context.pageContext.web.absoluteUrl}/SiteAssets/Lincoln-Realty-Logo-orange.png"
-            alternate="lincoln-logo">
-          <ul class="list-unstyled components mb-5">
-            <li class="active">
-              <a id="home">
-                <span class="fa fa-home mr-3"> </span>Home
-              </a>
-            </li>
-            <li id="adminMgtComponent">
-              <a id="adminMgt">
-                <span class="fa fa-sliders-h mr-3"> </span>Admin Management
-              </a>
-            </li>
-            <li>
-              <a id="CaseMgt">
-                <span class="fas fa-file-contract mr-3"> </span>Case Management
-              </a>
-              <div class="collapse1 collapse">
-                <ul style="list-style-type:none;" id="caseManagementUl">
-                  <li>
-                    <a id="caseList">
-                      <span class="fa fa-list"> </span>  List of Case
+    this.domElement.innerHTML = `<div id="cover"> <span class="glyphicon glyphicon-refresh w3-spin preloader-Icon"></span> loading...</div>
+
+
+    <div id="wrapper" class="">
+        <!-- Sidebar -->
+        <div id="sidebar-wrapper">
+            <img id="imgLogo" src="${this.context.pageContext.web.absoluteUrl}/SiteAssets/Lincoln-Realty-Logo-orange.png"
+                alternate="lincoln-logo">
+            <ul class="list-unstyled components mb-5">
+    
+                <li>
+                    <a id="home">
+                        <span class="fa fa-home mr-3"> </span>Home
                     </a>
-                  </li>
-                  <li>
-                    <a id="addCase">
-                      <span class="fa fa-plus"> </span>  Add new Case
+                </li>
+    
+                <li id="adminMgtComponent">
+                    <a id="adminMgt">
+                        <span class="fa fa-sliders-h mr-3"> </span>Admin Management
                     </a>
-                  </li>
-                </ul>
-              </div>
-            </li>  
-            <li>
-              <a id="AssetMgt">
-                <span class="fas fa-folder-open mr-3"></span>Asset Management
-              </a>
-              <div class="collapse2 collapse">
-                <ul style="list-style-type:none;" id="assetManagementUl">
-                  <li>
-                    <a id="assetList">
-                      <span class="fa fa-list"> </span>  List of Assets
+                </li>
+    
+                <li>
+                    <a id="CaseMgt">
+                        <span class="fas fa-file-contract mr-3"> </span>Case Management
                     </a>
-                  </li>
-                  <li>
-                    <a id="addAsset">
-                      <span class="fa fa-plus"> </span>  Add new Asset
+    
+                    <div class="collapse1 collapse">
+    
+                        <ul style="list-style-type:none;" id="caseManagementUl">
+                            <li>
+                                <a id="caseList">
+                                    <span class="fa fa-list"> </span> List of Case
+                                </a>
+                            </li>
+    
+                            <li>
+                                <a id="addCase">
+    
+                                    <span class="fa fa-plus"> </span> Add new Case
+    
+                                </a>
+                            </li>
+    
+    
+                        </ul>
+                    </div>
+                </li>
+                <li>
+                    <a id="AssetMgt">
+                        <span class="fas fa-folder-open mr-3"></span>Asset Management
                     </a>
-                  </li>
-                </ul>
-              </div>
-            </li>
-          </ul>
-        </nav>
-      </div>
-      <div class="container">
-        <div class="inner-container">
-          <div class="form-row">
-            <div class="col-md-12">
-              <h3>Asset Management Dashboard</h3>
-            </div>
-          </div>
-          <div class="filters">
-            <div class="form-row">
-              <div class="col-md-4">
-                <div>
-                  <h7>Asset Reference No</h7>
-                </div>
-                <div class="input-group">
-                  <input list="idAssetReferenceNo" id="myListAssetReferenceNo" name="myBrowserAssetReferenceNo" autocomplete="off"/>
-                  <datalist id="idAssetReferenceNo">
-                  </datalist>
-                </div>
-              </div>
-              <div class="col-md-4">
-                <div>
-                  <h7>Asset Name</h7>
-                </div>
-                <div class="input-group">
-                  <input list="idAssetName" id="myListAssetName" name="myBrowserAssetName" autocomplete="off"/>
-                  <datalist id="idAssetName">
-                  </datalist>
-                </div>
-              </div>
-              <div class="col-md-4">
-                <div>
-                  <h7>Type Of Asset</h7>
-                </div>
-                <div class="input-group">
-                  <input list="idTypeOfAsset" id="myListTypeOfAsset" name="myBrowserTypeOfAsset" autocomplete="off"/>
-                  <datalist id="idTypeOfAsset">
-                  </datalist>
-                </div>
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="col-md-6">
-                <div>
-                  <h7>Location</h7>
-                </div>
-                <div class="input-group">
-                  <input list="idLocation" id="myListLocation" name="myBrowserLocation" autocomplete="off"/>
-                  <datalist id="idLocation">
-                  </datalist>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div>
-                  <h7>Office</h7>
-                </div>
-                <div class="input-group">
-                  <input list="idOffice" id="myListOffice" name="myBrowserOffice" autocomplete="off"/>
-                  <datalist id="idOffice">
-                  </datalist>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="form-row btnFilterRow">
-            <div class="col-md-1 offset-11">
-              <button type="button" class="btn btn-sm btn-secondary" id="btnFilter">Filter</button>
-            </div>
-          </div>
-          <div id="divContainer">
-          </div>
+    
+                    <div class="collapse2 collapse">
+    
+                        <ul style="list-style-type:none;" id="assetManagementUl">
+                            <li>
+                                <a id="assetList">
+                                    <span class="fa fa-list"> </span> List of Assets
+                                </a>
+                            </li>
+    
+                            <li>
+                                <a id="addAsset">
+                                    <span class="fa fa-plus"> </span> Add new Asset
+    
+                                </a>
+                            </li>
+    
+    
+    
+                        </ul>
+                    </div>
+                </li>
+            </ul>
         </div>
-      </div>
+        <!-- /#sidebar-wrapper -->
+    
+        <!-- Page Content -->
+        <div id="page-content-wrapper">
+            <div class="container-fluid">
+    
+    
+                <div class="row">
+                    <div class="col-lg-12">
+    
+                        <div class="navnav">
+                            <a href="#menu-toggle" class="btn btn-default" id="menu-toggle"><i
+                                    class="fas fa-align-justify"></i></a>
+                        </div>
+    
+                        <nav class="navbar navbar-expand-lg navbar-dark bg-dark" id="navnavr">
+    
+                            <div class="container-fluid">
+    
+                                <div class="col-lg-12" id="title">
+                                <h3>Asset Management Dashboard</h3>
+                                </div>
+                            </div>
+                        </nav>
+    
+                        <div id="content2">
+    
+    
+                            <div class="w3-container" id="form">
+                                <div id="content3">
+    
+                              
+                                    <div class="filters">
+                                        <div class="form-row">
+                                            <div class="col-md-4">
+                                                <div>
+                                                    <h7>Asset Reference No</h7>
+                                                </div>
+                                                <div class="input-group">
+                                                    <input list="idAssetReferenceNo" id="myListAssetReferenceNo"
+                                                        name="myBrowserAssetReferenceNo" autocomplete="off" />
+                                                    <datalist id="idAssetReferenceNo">
+                                                    </datalist>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div>
+                                                    <h7>Asset Name</h7>
+                                                </div>
+                                                <div class="input-group">
+                                                    <input list="idAssetName" id="myListAssetName" name="myBrowserAssetName"
+                                                        autocomplete="off" />
+                                                    <datalist id="idAssetName">
+                                                    </datalist>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div>
+                                                    <h7>Type Of Asset</h7>
+                                                </div>
+                                                <div class="input-group">
+                                                    <input list="idTypeOfAsset" id="myListTypeOfAsset" name="myBrowserTypeOfAsset"
+                                                        autocomplete="off" />
+                                                    <datalist id="idTypeOfAsset">
+                                                    </datalist>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-row">
+                                            <div class="col-md-6">
+                                                <div>
+                                                    <h7>Location</h7>
+                                                </div>
+                                                <div class="input-group">
+                                                    <input list="idLocation" id="myListLocation" name="myBrowserLocation" autocomplete="off" />
+                                                    <datalist id="idLocation">
+                                                    </datalist>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div>
+                                                    <h7>Office</h7>
+                                                </div>
+                                                <div class="input-group">
+                                                    <input list="idOffice" id="myListOffice" name="myBrowserOffice" autocomplete="off" />
+                                                    <datalist id="idOffice">
+                                                    </datalist>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                        
+                                    <div class="form-row btnFilterRow">
+                                        <div class="col-md-1 offset-11">
+                                            <button type="button" class="btn btn-sm btn-secondary" id="btnFilter">Filter</button>
+                                        </div>
+                                    </div>
+                        
+                                    <div id="divContainer">
+                                    </div>
+                        
+                                
+    
+    
+                                </div>
+                            </div>
+                        </div>
+    
+                    </div>
+                </div>
+            </div>
+        </div>
+    
+        <!-- /#page-content-wrapper -->
+    
     </div>`;
+
+    $("#menu-toggle").click( (e)=> {
+      e.preventDefault();
+      $("#wrapper").toggleClass("toggled");
+    });
+    
     $("#cover").fadeOut(1750);
     // SidebarDetails.sidebarMenu(this.context.pageContext.web.absoluteUrl);
     this._getAccessToken();

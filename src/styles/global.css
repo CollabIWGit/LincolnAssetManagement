@@ -224,6 +224,19 @@ select option {
   margin-bottom: 10px;
 }
 
+#form, #table {
+  border-radius: 4.2px;
+  box-shadow: 0 3px 10px -2px rgb(0 0 0 / 20%);
+  background-color: #fff;
+  padding: 20px;
+  margin-top: 10px;
+  /* margin-left: 13%; */
+  margin-bottom: 10px;
+  width: 100%;
+   left: 0; 
+   right: 0;
+ }  
+
 .input-group:before,
 .input-group:after {
   content: "";
@@ -308,9 +321,9 @@ select option {
   background-color: transparent;
 }
 
-#btnSubmit {
+/* #btnSubmit {
   margin-right: 25%;
-}
+} */
 
 .list-inline-item button:hover, #btnSubmit:hover, #btnCancel:hover {
   background-color: #f0a500;
