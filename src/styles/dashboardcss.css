@@ -55,9 +55,7 @@ h7 {
   zoom: 1;
 }
 
-input:not(#tbl_asset_list), label,
-select option,
-select {
+#myListAssetReferenceNo, #myListAssetName, #myListTypeOfAsset, #myListLocation, #myListOffice {
   width: 100%;
   height: 3.4em;
   padding: 0 3%;
@@ -86,7 +84,7 @@ input:focus + .input-icon:after {
 
 select {
   display: inline-block;
-  width: 50%;
+  /* width: 50%; */
   text-align: center;
   float: left;
   border-radius: 0;
@@ -110,4 +108,15 @@ select:focus, select:active {
 #btnFilter:hover {
   background-color: #f0a500;
   border-color: #f0a500;
+}
+
+#noDataText {
+  text-align: center;
+  font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 22px;
+  font-weight: 550;
+}
+
+.i_b_ada2ac09 {
+  background-color: rgb(252, 252, 252);
 }

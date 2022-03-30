@@ -1,4 +1,5 @@
-import { Version } from '@microsoft/sp-core-library';
+import { //Guid, 
+  Version} from '@microsoft/sp-core-library';
 import { IPropertyPaneConfiguration, PropertyPaneTextField } from '@microsoft/sp-property-pane';
 import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
 import { escape } from '@microsoft/sp-lodash-subset';
@@ -7,6 +8,13 @@ import { Navigation } from 'spfx-navigation';
 import * as strings from 'AddAssetsWebPartStrings';
 import * as $ from "jquery";
 import { StringIterator } from 'lodash';
+import { Guid } from "guid-typescript";
+
+import { navUtils } from '../../utils/navUtils';
+let NavUtils = new navUtils();
+
+import { navbar } from '../../utils/navbar';
+let Navbar = new navbar();
 
 require('../../../node_modules/bootstrap/dist/css/bootstrap.min.css');
 require('../../../node_modules/@fortawesome/fontawesome-free/css/all.min.css');
@@ -16,10 +24,13 @@ require('../../styles/test.css');
 // require('../../styles/navbar.css');
 
 import * as commonConfig from "../../utils/commonConfig.json";
-import { sidebarDetails } from "../../utils/sidebarDetails";
-let SidebarDetails = new sidebarDetails();
 
 var fileInfos = [];
+var filestream;
+var fixarray;
+const fileByteArray = [];
+const arrFileNameNoSpace = [];
+const arrFileName = [];
 
 //#region Interfaces
 export interface IAddAssetsWebPartProps {
@@ -37,8 +48,7 @@ export interface IApplicationDetailsList {
   LastServicingDate: string;
   ServicingPeriod: string;
   Comment: string;
-  AttachmentFileName: string;
-  AttachmentFileContent: string;
+  AssetAttachments: [{ AttachmentFileName: string, AttachmentFileContent: any }];
 }
 
 export interface IDynamicField extends IApplicationDetailsList {
@@ -93,285 +103,192 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
   private dropdownListName: string = "";
   private arrFieldsRequired = [];
   private accessToken: string = "";
-  private sequenceNo: string = "";
   private dynamicField: IDynamicField;
   private floorNoFiltered: any = [];
   private ListOfOffices: IOffices[];
   private ListOfBuildings: IBuildings[];
   private ListOfOfficeFiltered: IOffices[];
-  
+  public fileGUID: Guid;
+
   public render(): void {
-    this.domElement.innerHTML = `
-
-
+    this.domElement.innerHTML = `${Navbar.cover}
     <div id="wrapper" class="">
-        <!-- Sidebar -->
-        <div id="sidebar-wrapper">
-            <img id="imgLogo" src="${this.context.pageContext.web.absoluteUrl}/SiteAssets/Lincoln-Realty-Logo-orange.png"
-                alternate="lincoln-logo">
-            <ul class="list-unstyled components mb-5">
-    
-                <li>
-                    <a id="home">
-                        <span class="fa fa-home mr-3"> </span>Home
-                    </a>
-                </li>
-    
-                <li id="adminMgtComponent">
-                    <a id="adminMgt">
-                        <span class="fa fa-sliders-h mr-3"> </span>Admin Management
-                    </a>
-                </li>
-    
-                <li>
-                    <a id="CaseMgt">
-                        <span class="fas fa-file-contract mr-3"> </span>Case Management
-                    </a>
-    
-                    <div class="collapse1 collapse">
-    
-                        <ul style="list-style-type:none;" id="caseManagementUl">
-                            <li>
-                                <a id="caseList">
-                                    <span class="fa fa-list"> </span> List of Case
-                                </a>
-                            </li>
-    
-                            <li>
-                                <a id="addCase">
-    
-                                    <span class="fa fa-plus"> </span> Add new Case
-    
-                                </a>
-                            </li>
-    
-    
-                        </ul>
-                    </div>
-                </li>
-                <li>
-                    <a id="AssetMgt">
-                        <span class="fas fa-folder-open mr-3"></span>Asset Management
-                    </a>
-    
-                    <div class="collapse2 collapse">
-    
-                        <ul style="list-style-type:none;" id="assetManagementUl">
-                            <li>
-                                <a id="assetList">
-                                    <span class="fa fa-list"> </span> List of Assets
-                                </a>
-                            </li>
-    
-                            <li>
-                                <a id="addAsset">
-                                    <span class="fa fa-plus"> </span> Add new Asset
-    
-                                </a>
-                            </li>
-    
-    
-    
-                        </ul>
-                    </div>
-                </li>
-            </ul>
-        </div>
-        <!-- /#sidebar-wrapper -->
-    
-        <!-- Page Content -->
-        <div id="page-content-wrapper">
-            <div class="container-fluid">
-    
-    
-                <div class="row">
-                    <div class="col-lg-12">
-    
-                        <div class="navnav">
-                            <a href="#menu-toggle" class="btn btn-default" id="menu-toggle"><i
-                                    class="fas fa-align-justify"></i></a>
-                        </div>
-    
-                        <nav class="navbar navbar-expand-lg navbar-dark bg-dark" id="navnavr">
-    
-                            <div class="container-fluid">
-    
-                                <div class="col-lg-12" id="title">
-                                    <h3>Asset Management Form</h3>
-                                </div>
-                            </div>
-                        </nav>
-    
-                        <div id="content2">
-    
-    
-                            <div class="w3-container" id="form">
-                                <div id="content3">
-    
-                               
-                                      <div class="form-row">
-                                        <div class="col-md-6">
-                                          <div>
-                                            <h7>Name Of Asset</h7>
-                                          </div>
-                                          <div class="input-group">
-                                            <input type="text" id="idAssetName" autocomplete="off"/>
-                                          </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                          <div>
-                                            <h7>Asset Reference No.</h7>
-                                          </div>
-                                          <div class="input-group">
-                                            <input type="text" id="idAssetRefNo" readonly autocomplete="off"/> 
-                                          </div>
-                                        </div>
-                                      </div>
-                                      <div class="form-row">
-                                        <div class="col-md-6">
-                                          <div>
-                                            <h7>Office</h7>
-                                          </div>
-                                          <div class="input-group">
-                                            <input list="idOffice" id="myListOffice" name="myBrowserOffice" autocomplete="off"/>
-                                            <datalist id="idOffice">
-                                            </datalist>
-                                          </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                          <div>
-                                            <h7>Floor</h7>
-                                          </div>
-                                            <input list="idFloor" id="myListFloor" name="myBrowserFloor" autocomplete="off"/>
-                                            <datalist id="idFloor">
-                                            </datalist>
-                                        </div>
-                                      </div>
-                                      <div class="form-row">
-                                        <div class="col-md-6">
-                                          <div>
-                                            <h7>Building Name</h7>
-                                          </div>
-                                          <div class="input-group">
-                                            <input list="idBuildingName" id="myListBuilding" name="myBrowserBuilding" autocomplete="off"/>
-                                            <datalist id="idBuildingName">
-                                            </datalist>
-                                          </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                          <div>
-                                            <h7>Building Location</h7>
-                                          </div>
-                                          <div class="input-group">
-                                            <input type="text" id="idBuildingLocation" autocomplete="off"/> 
-                                          </div>
-                                        </div>
-                                      </div>
-                                      <div class="form-row">
-                                        <div class="col-md-12 input-group">
-                                          <h7>Ownership</h7>
-                                          <input type="text" id="idOwnership" autocomplete="off"/>
-                                        </div>
-                                      </div>
-                                      <div class="form-row">
-                                        <div class="col-md-12">
-                                          <h7>Type Of Asset</h7>
-                                          <div class="input-group">
-                                            <select id="typeOfAssetList">
-                                            </select>
-                                          </div>
-                                        </div>
-                                      </div>
-                                      <div id="dynamicFields" class="form-row">
-                                      </div>
-                                      <div class="form-row">
-                                        <div class="col-md-12">
-                                          <h7>Servicing Required</h7>
-                                          <div class="input-group">
-                                            <input id="servicingRequired" type="radio" name="servicingReq" value="true" checked="true"/>
-                                            <label for="servicingRequired"><span>Yes</span></label>
-                                            <input id="servicingNotRequired" type="radio" name="servicingReq" value="false"/>
-                                            <label for="servicingNotRequired"><span>No</span></label>
-                                          </div>
-                                        </div>
-                                      </div>
-                                      <div class="form-row">
-                                        <div class="col-md-6">
-                                          <div>
-                                            <h7>Last Servicing Date</h7>
-                                          </div>
-                                          <div class="input-group">
-                                            <input type="date" id="idLastServicingDate" autocomplete="off"/>
-                                          </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                          <div>
-                                            <h7>Servicing Period</h7>
-                                          </div>
-                                          <div class="input-group">
-                                            <input type="text" id="idServicingPeriod" autocomplete="off"/> 
-                                          </div>
-                                        </div>
-                                      </div>
-                                      <div class="form-row">
-                                        <div class="col-md-12 input-group">
-                                          <h7>Comments</h7>
-                                          <textarea rows="3" id="idComments" autocomplete="off"></textarea>
-                                        </div>
-                                      </div>
-                                      <div class="form-row">
-                                        <div class="col-md-12">
-                                          <h7>Attachments</h7>
-                                          <div class="custom-file">
-                                            <input type="file" id="customFile" name="files" multiple>
-                                          </div>
-                                        </div>
-                                      </div>
-                                      <div class="form-row">
-                                        <div class="col-md-9 table-responsive">
-                                          <table class="table" id="attachmentTable">
-                                            <thead>
-                                              <tr>
-                                                <th class="th-lg" scope="col">Attachment Name</th>
-                                                <th scope="col">Action</th>
-                                              </tr>
-                                            </thead>
-                                            <tbody id="tableAttachmentContainer">
-                                            </tbody>
-                                          </table>
-                                        </div>
-                                      </div>
-
-
-                                      <div class="form-row">
-                                      <div class="col-xl-8">
-                                        <h6></h6>
-                                    </div>
-                                        <div class="col-xl-4 offset-8">
-                                          <button id="btnSubmit" class="btn btn-secondary" type="button">Submit</button>
-                                          <button id="btnCancel" class="btn btn-secondary" type="button">Cancel</button>
-                                        </div>
-                                      </div>
-                                
-    
-    
-                                </div>
-                            </div>
-                        </div>
-    
-                    </div>
+      <!-- Sidebar -->
+      ${Navbar.navbar}
+      <!-- /#sidebar-wrapper -->
+      <!-- Page Content -->
+      <div id="page-content-wrapper">
+        <div class="container-fluid">
+          <div class="row">
+            <div class="col-lg-12">
+              <div class="navnav">
+                <a href="#menu-toggle" class="btn btn-default" id="menu-toggle"><i class="fas fa-align-justify"></i></a>
+              </div>
+              <nav class="navbar navbar-expand-lg navbar-dark bg-dark" id="navnavr">
+                <div class="container-fluid">
+                  <div class="col-lg-12" id="title">
+                    <h3>Add New Asset Form</h3>
+                  </div>
                 </div>
+              </nav>
+              <div id="content2">
+                <div class="w3-container" id="form">
+                  <div id="content3">
+                    <div class="form-row">
+                      <div class="col-md-6">
+                        <div>
+                          <h7>Name Of Asset</h7>
+                        </div>
+                        <div class="input-group">
+                          <input type="text" id="idAssetName" autocomplete="off"/>
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div>
+                          <h7>Asset Reference No.</h7>
+                        </div>
+                        <div class="input-group">
+                          <input type="text" id="idAssetRefNo" readonly autocomplete="off"/> 
+                        </div>
+                      </div>
+                    </div>
+                    <div class="form-row">
+                      <div class="col-md-6">
+                        <div>
+                          <h7>Office</h7>
+                        </div>
+                        <div class="input-group">
+                          <input list="idOffice" id="myListOffice" name="myBrowserOffice" autocomplete="off"/>
+                          <datalist id="idOffice">
+                          </datalist>
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div>
+                          <h7>Floor</h7>
+                        </div>
+                          <input list="idFloor" id="myListFloor" name="myBrowserFloor" autocomplete="off"/>
+                          <datalist id="idFloor">
+                          </datalist>
+                      </div>
+                    </div>
+                    <div class="form-row">
+                      <div class="col-md-6">
+                        <div>
+                          <h7>Building Name</h7>
+                        </div>
+                        <div class="input-group">
+                          <input list="idBuildingName" id="myListBuilding" name="myBrowserBuilding" autocomplete="off"/>
+                          <datalist id="idBuildingName">
+                          </datalist>
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div>
+                          <h7>Building Location</h7>
+                        </div>
+                        <div class="input-group">
+                          <input type="text" id="idBuildingLocation" autocomplete="off"/> 
+                        </div>
+                      </div>
+                    </div>
+                    <div class="form-row">
+                      <div class="col-md-12 input-group">
+                        <h7>Ownership</h7>
+                        <input type="text" id="idOwnership" autocomplete="off"/>
+                      </div>
+                    </div>
+                    <div class="form-row">
+                      <div class="col-md-12">
+                        <h7>Type Of Asset</h7>
+                        <div class="input-group">
+                          <select id="typeOfAssetList">
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                    <div id="dynamicFields" class="form-row">
+                    </div>
+                    <div class="form-row">
+                      <div class="col-md-12">
+                        <h7>Servicing / Test Required</h7>
+                        <div class="input-group">
+                          <input id="servicingRequired" type="radio" name="servicingReq" value="true" checked="true"/>
+                          <label for="servicingRequired"><span>Yes</span></label>
+                          <input id="servicingNotRequired" type="radio" name="servicingReq" value="false"/>
+                          <label for="servicingNotRequired"><span>No</span></label>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="form-row">
+                      <div class="col-md-6">
+                        <div>
+                          <h7>Last Servicing / Test Date</h7>
+                        </div>
+                        <div class="input-group">
+                          <input type="date" id="idLastServicingDate" autocomplete="off"/>
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div>
+                          <h7>Servicing / Test Period</h7>
+                        </div>
+                        <div class="input-group">
+                          <input type="text" id="idServicingPeriod" autocomplete="off"/> 
+                        </div>
+                      </div>
+                    </div>
+                    <div class="form-row">
+                      <div class="col-md-12 input-group">
+                        <h7>Comments</h7>
+                        <textarea rows="3" id="idComments" autocomplete="off"></textarea>
+                      </div>
+                    </div>
+                    <div class="form-row">
+                      <div class="col-md-12">
+                        <h7>Attachments</h7>
+                        <div class="custom-file">
+                          <input type="file" id="customFile" name="files" multiple>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="form-row">
+                      <div class="col-md-9 table-responsive">
+                        <table class="table" id="attachmentTable">
+                          <thead>
+                            <tr>
+                              <th class="th-lg" scope="col">Attachment Name</th>
+                              <th scope="col">Action</th>
+                            </tr>
+                          </thead>
+                          <tbody id="tableAttachmentContainer">
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                    <div class="form-row">
+                      <div id="testingFile">
+                      </div>
+                    </div>
+                    <div class="form-row">
+                      <div class="col-xl-8">
+                        <h6></h6>
+                      </div>
+                      <div class="col-xl-3 offset-9">
+                        <button id="btnSubmit" class="btn btn-secondary" type="button">Submit</button>
+                        <button id="btnCancel" class="btn btn-secondary" type="button">Cancel</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
+          </div>
         </div>
-    
-        <!-- /#page-content-wrapper -->
-    
-    </div></div>`;
-
-    $("#menu-toggle").click( (e)=> {
-      e.preventDefault();
-      $("#wrapper").toggleClass("toggled");
-    });
+      </div>
+      <!-- /#page-content-wrapper -->
+    </div>
+  </div>`;
 
     this._renderTypeOfAssetListAsync();
     this._renderFieldRequiredListAsync();
@@ -380,8 +297,9 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
     this._checkAttachmentTable();
     this.AddEventListeners();
     this._getAccessToken();
-    this.collapse();
-    this.navTriggers();
+    NavUtils.collapse();
+    NavUtils.navTriggers();
+    NavUtils.cover();
   }
 
   private AddEventListeners(): any {
@@ -396,74 +314,6 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
     document.getElementById('myListBuilding').addEventListener('change', () => this._populateLocation());
   }
 
-  public navTriggers() {
-    $('#caseList').on('click', () => {
-      Navigation.navigate(`${this.context.pageContext.web.absoluteUrl}/SitePages/${commonConfig.Page.CaseDashboard}`, true);
-    });
-
-    $('#addCase').on('click', () => {
-      Navigation.navigate(`${this.context.pageContext.web.absoluteUrl}/SitePages/${commonConfig.Page.AddCase}`, true);
-    });
-
-    $('#home').on('click', () => {
-      Navigation.navigate(`${this.context.pageContext.web.absoluteUrl}/SitePages/${commonConfig.Page.HomePage}`, true);
-    });
-
-    $('#addAsset').on('click', () => {
-      Navigation.navigate(`${this.context.pageContext.web.absoluteUrl}/SitePages/${commonConfig.Page.AddAssets}`, true);
-    });
-
-    $('#assetList').on('click', () => {
-      Navigation.navigate(`${this.context.pageContext.web.absoluteUrl}/SitePages/${commonConfig.Page.AssetDashboard}`, true);
-    });
-  }
-
-  private collapse() {
-    $("#CaseMgt").hover(
-      () => {
-        (<any>$(".collapse1")).show();
-      },
-      () => {
-        (<any>$(".collapse1")).hide();
-      }
-    );
-
-    $("#AssetMgt").hover(
-      () => {
-        (<any>$(".collapse2")).show();
-      },
-      () => {
-        (<any>$(".collapse2")).hide();
-      }
-    );
-
-    $(".collapse2").hover(
-      () => {
-        (<any>$(".collapse2")).show();
-      },
-      () => {
-        (<any>$(".collapse2")).hide();
-      }
-    );
-
-    $(".collapse1").hover(
-      () => {
-        (<any>$(".collapse1")).show();
-      },
-      () => {
-        (<any>$(".collapse1")).hide();
-      }
-    );
-
-    $("#btnfd").click(() => {
-      (<any>$(".collapsecard")).slideToggle(500);
-    });
-
-    $("#sidebarCollapse").click(() => {
-      (<any>$("#sidebar")).slideToggle(500);
-    });
-  }
-
   //#region Type of Asset List
   private _getTypeOfAssetListData(): Promise<ITypeOfAssetLists> {
     return this.context.spHttpClient.get(this.context.pageContext.web.absoluteUrl + `/_api/web/lists/GetByTitle('${commonConfig.List.TypeOfAssetList}')/Items`, SPHttpClient.configurations.v1)
@@ -473,10 +323,16 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
   }
 
   private _renderTypeOfAssetList(items: ITypeOfAssetList[]): void {
+    var arr = [];
     let html: string = `<option selected>Select Type Of Assets</option>`;
     items.forEach((item: ITypeOfAssetList) => {
-      html += `<option>${item.Title}</option>`;
+      arr.push(item.Title);
+      arr.sort();
     });
+
+    for (let j = 0; j < arr.length; j++) {
+      html += `<option>${arr[j]}</option>`;
+    }
 
     const listContainer: Element = this.domElement.querySelector('#typeOfAssetList');
     listContainer.innerHTML = html;
@@ -491,10 +347,15 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
 
   //#region Dropdown List
   private _getDropdownListData(listName: string): Promise<IDropdownLists> {
-    return this.context.spHttpClient.get(this.context.pageContext.web.absoluteUrl + `/_api/web/lists/GetByTitle('${this.dropdownListName}')/Items`, SPHttpClient.configurations.v1)
+    try {
+      return this.context.spHttpClient.get(this.context.pageContext.web.absoluteUrl + `/_api/web/lists/GetByTitle('${listName}')/Items`, SPHttpClient.configurations.v1)
       .then((response: SPHttpClientResponse) => {
         return response.json();
       });
+    }
+    catch (error) {
+      return error;
+    }
   }
 
   private _renderDropdownList(items: IDropdownList[]): void {
@@ -508,9 +369,14 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
   }
 
   private _renderDropdownListAsync(listName: string): void {
-    this._getDropdownListData(listName).then((response) => {
-      this._renderDropdownList(response.value);
-    });
+    try {
+      this._getDropdownListData(listName).then((response) => {
+        this._renderDropdownList(response.value);
+      });
+    }
+    catch (error) {
+      return error;
+    }
   }
   //#endregion
 
@@ -567,6 +433,18 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
             this.dropdownListName = item.DropdownListName;
             this._renderDropdownListAsync(this.dropdownListName);
           }
+
+          //If field is a date & check if it is required
+          else if (item.FieldType == "Date") {
+            if (item.Required) {
+              html += `
+                <input type="date" id="id${item.Title}" autocomplete="off"/>`;
+            }
+            else {
+              html += `
+                <input type="date" id="id${item.Title}" autocomplete="off"/>`;
+            }
+          }
         }
 
         //Closing div tags
@@ -594,10 +472,11 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
   private _submit(): void {
     try {
       this._applicationDetails();
-      this._saveAsset(this.accessToken);
+      console.log(this.dynamicField);
+      // this._saveAsset(this.accessToken);
     }
     catch (error) {
-      console.log(error);
+      return error;
     }
   }
 
@@ -626,7 +505,7 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
         this._getAssetById(result["access_token"]);
       },
       error: (result) => {
-        console.log(result);
+        return result;
       }
     });
   }
@@ -722,7 +601,7 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
       }
     });
 
-    this._populateAssetRefNo();
+    this._getLastSequenceAssetRefNo(this.accessToken);
   }
 
   private _getLastSequenceAssetRefNo(token: string) {
@@ -735,7 +614,7 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
         Authorization: 'Bearer ' + token
       },
       success: (result) => {
-        this.sequenceNo = result;
+        this._populateAssetRefNo(result);
       },
       error: (error) => {
         return error;
@@ -743,18 +622,15 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
     });
   }
 
-  private _populateAssetRefNo() {
+  private _populateAssetRefNo(sequenceNum: number) {
     var buildingNameValue = (<HTMLInputElement>document.getElementById('myListBuilding')).value;
     var floorNoValue = (<HTMLInputElement>document.getElementById('myListFloor')).value;
 
-    this._getLastSequenceAssetRefNo(this.accessToken);
-    console.log(this.sequenceNo);
-    var nextSequenceNumber: number = +this.sequenceNo;
+    var nextSequenceNumber: number = +sequenceNum;
     nextSequenceNumber += 1;
     var strNextSequenceNumber: string = nextSequenceNumber.toString();
     while (strNextSequenceNumber.length < 3) {
       strNextSequenceNumber = "0" + strNextSequenceNumber;
-      console.log(strNextSequenceNumber);
     }
     this.ListOfBuildings.forEach((itemBuilding: IBuildings) => {
       if (buildingNameValue == itemBuilding.Title) {
@@ -764,33 +640,36 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
   }
 
   private _saveAsset(token: string): void {
-    $.ajax({
-      type: 'POST',
-      url: commonConfig.baseUrl + '/api/Asset/SaveAsset',
-      headers: {
-        Authorization: 'Bearer ' + token
-      },
-      dataType: 'json',
-      data: JSON.stringify(this.dynamicField),
-      contentType: 'application/json',
-      success: (result) => {
-        return result;
-      },
-      error: (result) => {
-        return result;
-      }
-    });
-
-    var url = new URL("https://frcidevtest.sharepoint.com/sites/Lincoln/SitePages/Asset-Mngt-Dashboard.aspx");
-    Navigation.navigate(url.toString(), true);
+    try {
+      $.ajax({
+        type: 'POST',
+        url: commonConfig.baseUrl + '/api/Asset/SaveAsset',
+        headers: {
+          Authorization: 'Bearer ' + token
+        },
+        dataType: 'json',
+        data: JSON.stringify(this.dynamicField),
+        contentType: 'application/json',
+        success: (result) => {
+          var url = new URL(`https://frcidevtest.sharepoint.com/sites/Lincoln/SitePages/${commonConfig.Page.AssetList}`);
+          Navigation.navigate(url.toString(), true);
+          return result;
+        },
+        error: (result) => {
+          return result;
+        }
+      });
+    }
+    catch (error) {
+      return error;
+    }
   }
 
   private _getAssetById(token: string): void {
-    var queryParms = new URLSearchParams(document.location.search.substring(1)); 
-    var myParm = queryParms.get("refNo"); 
+    var queryParms = new URLSearchParams(document.location.search.substring(1));
+    var myParm = queryParms.get("refNo");
     if (myParm) {
-      var refNo = myParm.trim(); 
-      console.log("refNo" + refNo);
+      var refNo = myParm.trim();
     }
 
     $.ajax({
@@ -803,168 +682,293 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
         this._populateFormById(result);
       },
       error: (result) => {
-        console.log(result);
+        return result;
       }
     });
+  }
+
+  private _checkURLParameter() {
+    var queryField = 'refNo';
+    var url = window.location.href;
+
+    if (url.indexOf('?' + queryField + '=') != -1) {
+      return true;
+    }
+    else if (url.indexOf('&' + queryField + '=') != -1) {
+      return true;
+    }
+    else {
+      return false;
+    }
   }
 
   private _populateFormById(formDetailsList: IDynamicField) {
-    $('#idAssetName').val(formDetailsList.Name);
-    $('#idAssetRefNo').val(formDetailsList.ReferenceNumber);
-    $('#myListFloor').val(formDetailsList.FloorNo);
-    $('#myListBuilding').val(formDetailsList.BuildingName);
-    $('#idOwnership').val(formDetailsList.Ownership);
-    $('#typeOfAssetList').val(formDetailsList.TypeOfAsset);
-    $('#idServicingPeriod').val(formDetailsList.ServicingPeriod);
-    $('#idComments').val(formDetailsList.Comment);
-    $('#idLastServicingDate').val(formDetailsList.LastServicingDate.substring(0,10));
+    if (this._checkURLParameter()) {
+      $("#btnSubmit").html("Update");
 
-    if((formDetailsList.ServicingRequired) == true) {
-      $('#servicingRequired').prop("checked", true);
-    }
-    else {
-      $('#servicingNotRequired').prop("checked", true);
-    }
+      $('#idAssetName').val(formDetailsList.Name);
+      $('#idAssetRefNo').val(formDetailsList.ReferenceNumber);
+      $('#myListFloor').val(formDetailsList.FloorNo);
+      $('#myListBuilding').val(formDetailsList.BuildingName);
+      $('#idOwnership').val(formDetailsList.Ownership);
+      $('#typeOfAssetList').val(formDetailsList.TypeOfAsset);
+      $('#idServicingPeriod').val(formDetailsList.ServicingPeriod);
+      $('#idComments').val(formDetailsList.Comment);
 
-    this.ListOfBuildings.forEach((item: IBuildings) => {
-      if (formDetailsList.BuildingName == item.Title) {
-        $('#idBuildingLocation').val(item.Location);
+      if (formDetailsList.Brand != null || formDetailsList.Power != null) {
+        this._renderFieldRequiredList(this.arrFieldsRequired);
 
-        this.ListOfOffices.forEach((officeItem: IOffices) => {
-          if (officeItem.BuildingIDId == item.ID && formDetailsList.FloorNo == officeItem.FloorNumber.toString()) {
-            $('#myListOffice').val(officeItem.Title);
-          }
+        if (formDetailsList.Brand != null) {
+          $('#idBrand').val(formDetailsList.Brand);
+          $('#idBrand').prop('disabled', true);
+        }
+
+        if (formDetailsList.Power != null) {
+          $('#idPower').val(formDetailsList.Power);
+          $('#idPower').prop('disabled', true);
+        }
+      }
+
+      if (formDetailsList.LastServicingDate == null) {
+        $('#idLastServicingDate').val("");
+      }
+      else {
+        $('#idLastServicingDate').val(formDetailsList.LastServicingDate.substring(0, 10));
+      }
+
+      if ((formDetailsList.ServicingRequired) == true) {
+        $('#servicingRequired').prop("checked", true);
+      }
+      else {
+        $('#servicingNotRequired').prop("checked", true);
+      }
+
+      this.ListOfBuildings.forEach((item: IBuildings) => {
+        if (formDetailsList.BuildingName == item.Title) {
+          $('#idBuildingLocation').val(item.Location);
+
+          this.ListOfOffices.forEach((officeItem: IOffices) => {
+            if (officeItem.FloorNumber != null) {
+              if (officeItem.BuildingIDId == item.ID && formDetailsList.FloorNo == officeItem.FloorNumber.toString()) {
+                $('#myListOffice').val(officeItem.Title);
+              }
+            }
+          });
+        }
+      });
+
+      if (formDetailsList.AttachmentFileName.length == 0) {
+        $('#attachmentTable').hide();
+      }
+      else {
+        $('#attachmentTable').show();
+        formDetailsList.AttachmentFileName.forEach((file: string) => {
+          var arrBuffer = this._base64ToArrayBuffer(file);
+          this._saveAndDownloadFile(arrBuffer, file);
         });
       }
-    });
 
-    //Disable all fields on view
-    $('#idAssetName').prop('disabled', true);
-    $('#idAssetRefNo').prop('disabled', true);
-    $('#myListFloor').prop('disabled', true);
-    $('#myListBuilding').prop('disabled', true);
-    $('#idOwnership').prop('disabled', true);
-    $('#typeOfAssetList').prop('disabled', true);
-    $('#idServicingPeriod').prop('disabled', true);
-    $('#idComments').prop('disabled', true);
-    $('#idLastServicingDate').prop('disabled', true);
-    $('#idBuildingLocation').prop('disabled', true);
-    $('#myListOffice').prop('disabled', true);
-    $('#servicingNotRequired').prop('disabled', true);
-    $('#servicingRequired').prop('disabled', true);
+      //Disable all fields on view
+      $('#idAssetName').prop('disabled', true);
+      $('#idAssetRefNo').prop('disabled', true);
+      $('#myListFloor').prop('disabled', true);
+      $('#myListBuilding').prop('disabled', true);
+      $('#idOwnership').prop('disabled', true);
+      $('#typeOfAssetList').prop('disabled', true);
+      $('#idServicingPeriod').prop('disabled', true);
+      $('#idComments').prop('disabled', true);
+      $('#idLastServicingDate').prop('disabled', true);
+      $('#idBuildingLocation').prop('disabled', true);
+      $('#myListOffice').prop('disabled', true);
+      $('#servicingNotRequired').prop('disabled', true);
+      $('#servicingRequired').prop('disabled', true);
+    }
   }
 
-  private _applicationDetails(): void {
-    var servicingReq;
-    var typeOfAssetsValue = (<HTMLInputElement>document.getElementById('typeOfAssetList')).value;
+  private _applicationDetails() {
+    try {
+      var servicingReq;
+      var attachmentArr: [{ AttachmentFileName: string, AttachmentFileContent: any }];
+      var typeOfAssetsValue = (<HTMLInputElement>document.getElementById('typeOfAssetList')).value;
 
-    if ($('#servicingNotRequired').is(':checked')) {
-      servicingReq = false;
-    }
-    else if ($('#servicingRequired').is(':checked')) {
-      servicingReq = true;
-    }
-
-    // FILE NAME AND
-    // CONTENT
-    // HERE
-
-    this.dynamicField = {
-      Name: (<HTMLInputElement>document.getElementById('idAssetName')).value,
-      ReferenceNumber: (<HTMLInputElement>document.getElementById('idAssetRefNo')).value,
-      BuildingName: (<HTMLInputElement>document.getElementById('idBuildingLocation')).value,
-      FloorNo: (<HTMLInputElement>document.getElementById('myListFloor')).value,
-      Ownership: (<HTMLInputElement>document.getElementById('idOwnership')).value,
-      TypeOfAsset: (<HTMLInputElement>document.getElementById('typeOfAssetList')).value,
-      LastServicingDate: (<HTMLInputElement>document.getElementById('idLastServicingDate')).value,
-      ServicingPeriod: (<HTMLInputElement>document.getElementById('idServicingPeriod')).value,
-      Comment: (<HTMLInputElement>document.getElementById('idComments')).value,
-      AttachmentFileName: "",
-      AttachmentFileContent: "",
-      ServicingRequired: servicingReq
-    };
-
-    this.arrFieldsRequired.forEach((item) => {
-      if (item.TypeOfAssets.Title == typeOfAssetsValue) {
-        this.dynamicField[`${item.Title}`] = (<HTMLInputElement>document.getElementById(`id${item.Title}`)).value;
+      if ($('#servicingNotRequired').is(':checked')) {
+        servicingReq = false;
       }
-    });
+      else if ($('#servicingRequired').is(':checked')) {
+        servicingReq = true;
+      }
+
+      console.log("fileInfos.length: " + fileInfos.length);
+      if (fileInfos.length > 0) {
+        console.log("fileInfos:");
+        console.log(fileInfos);
+        fileInfos.forEach((file: any) => {
+          console.log("Name: " + file.name);
+          // console.log(fileByteArray);
+          attachmentArr.push({
+            AttachmentFileName: file.name,
+            AttachmentFileContent: file.content
+          });
+        });
+      }
+      else {
+        attachmentArr = [{ AttachmentFileName: "", AttachmentFileContent: [] }];
+      }
+
+      console.log(fileByteArray);
+      console.log(attachmentArr);
+
+      this.dynamicField = {
+        Name: (<HTMLInputElement>document.getElementById('idAssetName')).value,
+        ReferenceNumber: (<HTMLInputElement>document.getElementById('idAssetRefNo')).value,
+        BuildingName: (<HTMLInputElement>document.getElementById('myListBuilding')).value,
+        FloorNo: (<HTMLInputElement>document.getElementById('myListFloor')).value,
+        Ownership: (<HTMLInputElement>document.getElementById('idOwnership')).value,
+        TypeOfAsset: (<HTMLInputElement>document.getElementById('typeOfAssetList')).value,
+        LastServicingDate: (<HTMLInputElement>document.getElementById('idLastServicingDate')).value,
+        ServicingPeriod: (<HTMLInputElement>document.getElementById('idServicingPeriod')).value,
+        Comment: (<HTMLInputElement>document.getElementById('idComments')).value,
+        AssetAttachments: attachmentArr,
+        ServicingRequired: servicingReq
+      };
+
+      this.arrFieldsRequired.forEach((item) => {
+        if (item.TypeOfAssets.Title == typeOfAssetsValue) {
+          this.dynamicField[`${item.Title}`] = (<HTMLInputElement>document.getElementById(`id${item.Title}`)).value;
+        }
+      });
+
+      console.log(this.dynamicField);
+    }
+    catch (error) {
+      console.log(error);
+    }
   }
 
-  private _uploadToAttachmentTable(): void {
-    // var myFile = (<HTMLInputElement>document.getElementById('customFile')).files;
-    let html: string = "";
-    // console.log(myFile);
+  //#region File functions
+  private _base64ToArrayBuffer(fileContent: string) {
+    var binaryString = window.atob(fileContent);
+    var bytes = new Uint8Array(binaryString.length);
+    var arrBuffer = bytes.map((byte, i) => binaryString.charCodeAt(i));
+    return arrBuffer;
+  }
 
+  private _saveAndDownloadFile(arrayBuffer, fileName) {
+    var blob = new Blob([arrayBuffer]);
+    var link = document.createElement('a');
+    var url = URL.createObjectURL(blob);
+
+    var fileNameNoSpace = fileName.replace(/ /g, "");
+
+    this._populateAttachmentTable(fileNameNoSpace, fileName);
+  }
+
+  private async _convertFileToBinary() {
+    var input = (<HTMLInputElement>document.getElementById("customFile"));
+    var fileCount = input.files.length;
+    for (var i = 0; i < fileCount; i++) {
+      var reader = new FileReader();
+      await reader.readAsArrayBuffer(input.files[0]);
+      reader.onload = () => {
+        filestream = reader.result;
+        fixarray = new Uint8Array(filestream);
+        for (let ii = 0; ii < fixarray.length; ii++) {
+          fileByteArray.push(fixarray[ii]);
+        }
+      };
+    }
+  }
+
+  private _uploadToAttachmentTable() {
     this._checkAttachmentTable();
+    var fileCount = (<HTMLInputElement>document.getElementById("customFile")).files.length;
 
-    // for (var i = 0, file; file = fileInfos[i]; i++) {
-    //   console.log(file);
-    //   $('#attachmentTable').show();
-    //   html += `<tr><td class="th-lg" scope="row">${file.name}</td>
-    //   <td>
-    //     <ul class="list-inline m-0">
-    //       <li class="list-inline-item">
-    //         <button class="btn btn-secondary btn-sm rounded-circle" type="button" data-toggle="tooltip" data-placement="top" title="View"><i class="fa fa-eye"></i></button>
-    //       </li>
-    //       <li class="list-inline-item">
-    //         <button class="btn btn-secondary btn-sm rounded-circle" type="button" data-toggle="tooltip" data-placement="top" title="Delete"><i class="fa fa-trash"></i></button>
-    //       </li>
-    //     </ul>
-    //   </td></tr>`;
-    // }
-
-   fileInfos.forEach((file: any) =>{
+    if (fileInfos.length > 0 && fileInfos.length == fileCount) {
       $('#attachmentTable').show();
+      fileInfos.forEach((file: any) => {
+        var fileNameNoSpace = file.name.replace(/ /g, "");
+        arrFileNameNoSpace.push(fileNameNoSpace);
+        arrFileName.push(file.name);
+      });
 
-      var fileNameNoSpace = file.name.replace(/ /g, "");
+      this._populateAttachmentTable(arrFileNameNoSpace, arrFileName);
+    }
+  }
 
-      html += `<tr><td class="th-lg" scope="row">${file.name}</td>
+  private _populateAttachmentTable(fileNameNoSpace: string[], fileName: string[]) {
+    let html: string = "";
+
+    for (let x = 0; x < fileNameNoSpace.length; x++) {
+      html += `<tr id="tr_${fileNameNoSpace[x]}"><td class="th-lg" scope="row">${fileName[x]}</td>
       <td>
         <ul class="list-inline m-0">
-          <li class="list-inline-item">
+          <!--<li class="list-inline-item">
             <button class="btn btn-secondary btn-sm rounded-circle" type="button" data-toggle="tooltip" data-placement="top" title="View"><i class="fa fa-eye"></i></button>
-          </li>
+          </li>-->
           <li class="list-inline-item delete">
-            <button class="btn btn-secondary btn-sm rounded-circle" id="btn_${fileNameNoSpace}" type="button" data-toggle="tooltip" data-placement="top" title="Delete"><i class="fa fa-trash"></i></button>
+            <button class="btn btn-secondary btn-sm rounded-circle" id="btn_${fileNameNoSpace[x]}" type="button" data-toggle="tooltip" data-placement="top" title="Delete"><i class="fa fa-trash"></i></button>
           </li>
         </ul>
       </td></tr>`;
-   });
+    }
 
-  //  this.clickOnDelete();
-    
+    this._convertFileToBinary();
+
     const listContainer: Element = this.domElement.querySelector('#tableAttachmentContainer');
     listContainer.innerHTML = html;
+
+    $("#tableAttachmentContainer").on('click', '.delete', function () {
+      try {
+        var trid = $(this).closest('tr').attr('id').substring(3);
+        if (fileInfos.length > 0) {
+          $(this).closest('tr').remove();
+          fileInfos.forEach((file: any) => {
+            var fileNameReplace = file.name.replace(/ /g, "");
+            if (trid == fileNameReplace) {
+              fileInfos = fileInfos.filter(item => item.name !== file.name);
+              if (fileInfos.length == 0) {
+                $('#attachmentTable').hide();
+              }
+            }
+          });
+        }
+        else {
+          $(this).closest('tr').remove();
+          $('#attachmentTable').hide();
+        }
+      }
+      catch(error) {
+        return error;
+      }
+    });
   }
 
   private blob() {
     var input = (<HTMLInputElement>document.getElementById("customFile"));
     var fileCount = input.files.length;
-    for (var i = 0; i < fileCount; i++) {
-      var fileName = input.files[i].name;
-      var file = input.files[i];
-      var reader = new FileReader();
-      reader.onload = ((file1) => {
-        return (e) => {
-          fileInfos.push({
-            "name": file1.name,
-            "content": e.target.result
-          });
-          console.log(fileInfos);
-          this._uploadToAttachmentTable();
-        };
-      })(file);
-      reader.readAsArrayBuffer(file);
+    try{
+      for (var i = 0; i < fileCount; i++) {
+        var file = input.files[i];
+        var reader = new FileReader();
+        reader.onload = ((file1) => {
+          return (e) => {
+            this.fileGUID = Guid.create();
+            fileInfos.push({
+              "id": this.fileGUID.toString(),
+              "name": file1.name,
+              "content": e.target.result
+            });
+              this._uploadToAttachmentTable();
+          };
+        })(file);
+        reader.readAsArrayBuffer(file);
+      }
+    }
+    catch(error) {
+      return error;
     }
   }
-
-  private clickOnDelete() {
-    //Click delete btn
-    $(".delete").on('click', 'button', function (){
-      console.log("Click delete: " + $(this).attr('id'));
-    });
-  }
+  //#endregion
 
   private _checkAttachmentTable(): void {
     var myFile = (<HTMLInputElement>document.getElementById('customFile')).files;

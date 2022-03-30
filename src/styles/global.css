@@ -321,9 +321,9 @@ select option {
   background-color: transparent;
 }
 
-/* #btnSubmit {
-  margin-right: 25%;
-} */
+#btnSubmit {
+  margin-right: 32%;
+}
 
 .list-inline-item button:hover, #btnSubmit:hover, #btnCancel:hover {
   background-color: #f0a500;
