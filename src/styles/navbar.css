@@ -50,6 +50,7 @@
 }
 
 #sidebar ul li a:hover {
+    cursor: pointer;
     color: #fff;
     background: #f0a500;
     border-bottom: 1px solid #f0a500;

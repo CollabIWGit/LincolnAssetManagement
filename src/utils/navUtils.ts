@@ -96,8 +96,12 @@ export class navUtils {
             }
         );
 
-        $("#btnfd").click(() => {
-            (<any>$(".collapsecard")).slideToggle(500);
+        $("#btnLocation").click(() => {
+            (<any>$(".collapsecardLocation")).slideToggle(500);
+        });
+
+        $("#btnOffice").click(() => {
+            (<any>$(".collapsecardOffice")).slideToggle(500);
         });
 
         $("#sidebarCollapse").click(() => {
@@ -106,7 +110,7 @@ export class navUtils {
     }
 
     public cover() {
-        $("#cover").fadeOut(3000);
+        $("#cover").fadeOut(4000);
         $("#menu-toggle").click((e) => {
             e.preventDefault();
             $("#wrapper").toggleClass("toggled");

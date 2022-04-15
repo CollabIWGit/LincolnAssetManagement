@@ -26,11 +26,11 @@ require('../../styles/test.css');
 import * as commonConfig from "../../utils/commonConfig.json";
 
 var fileInfos = [];
+var tempFileInfos = [];
 var filestream;
 var fixarray;
-const fileByteArray = [];
-const arrFileNameNoSpace = [];
-const arrFileName = [];
+var fileByteArray = [];
+
 
 //#region Interfaces
 export interface IAddAssetsWebPartProps {
@@ -41,6 +41,8 @@ export interface IApplicationDetailsList {
   Name: string;
   ReferenceNumber: string;
   BuildingName: string;
+  OfficeName: string;
+  BuildingLocation: string;
   FloorNo: string;
   Ownership: string;
   TypeOfAsset: string;
@@ -48,7 +50,13 @@ export interface IApplicationDetailsList {
   LastServicingDate: string;
   ServicingPeriod: string;
   Comment: string;
-  AssetAttachments: [{ AttachmentFileName: string, AttachmentFileContent: any }];
+  AssetAttachments: IAttachmentDetails[];
+}
+
+export interface IAttachmentDetails {
+  AttachmentGUID : string;
+  AttachmentFileName: string;
+  AttachmentFileContent: any[];
 }
 
 export interface IDynamicField extends IApplicationDetailsList {
@@ -104,11 +112,13 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
   private arrFieldsRequired = [];
   private accessToken: string = "";
   private dynamicField: IDynamicField;
+  private formDetails: IDynamicField;
   private floorNoFiltered: any = [];
   private ListOfOffices: IOffices[];
   private ListOfBuildings: IBuildings[];
   private ListOfOfficeFiltered: IOffices[];
   public fileGUID: Guid;
+  private mainFileByteArray = [];
 
   public render(): void {
     this.domElement.innerHTML = `${Navbar.cover}
@@ -394,6 +404,7 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
 
     if (items.length > 0) {
       items.forEach((item: IFieldsRequiredList) => {
+        var titleItem = item.Title.replace(/ /g, "");
         if (typeOfAssetsValue == item.TypeOfAssets.Title) {
           //Item header
           html += `
@@ -407,11 +418,11 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
           if (item.FieldType == "TextBox") {
             if (item.Required) {
               html += `
-                <input type="text" id="id${item.Title}" required autocomplete="off"/>`;
+                <input type="text" id="id${titleItem}" required autocomplete="off"/>`;
             }
             else {
               html += `
-                <input type="text" id="id${item.Title}" autocomplete="off"/>`;
+                <input type="text" id="id${titleItem}" autocomplete="off"/>`;
             }
           }
 
@@ -419,14 +430,14 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
           else if (item.FieldType == "Dropdown") {
             if (item.Required) {
               html += `
-                <input type="text" id="id${item.Title}" list="id${item.Title}List" name="my${item.Title}Browser" required autocomplete="off"/>
-                <datalist id="id${item.Title}List">
+                <input type="text" id="id${titleItem}" list="id${titleItem}List" name="my${titleItem}Browser" required autocomplete="off"/>
+                <datalist id="id${titleItem}List">
                 </datalist>`;
             }
             else {
               html += `
-                <input type="text" id="id${item.Title}" list="id${item.Title}List" name="my${item.Title}Browser" autocomplete="off"/>
-                <datalist id="id${item.Title}List">
+                <input type="text" id="id${titleItem}" list="id${titleItem}List" name="my${titleItem}Browser" autocomplete="off"/>
+                <datalist id="id${titleItem}List">
                 </datalist>`;
             }
 
@@ -438,11 +449,11 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
           else if (item.FieldType == "Date") {
             if (item.Required) {
               html += `
-                <input type="date" id="id${item.Title}" autocomplete="off"/>`;
+                <input type="date" id="id${titleItem}" autocomplete="off"/>`;
             }
             else {
               html += `
-                <input type="date" id="id${item.Title}" autocomplete="off"/>`;
+                <input type="date" id="id${titleItem}" autocomplete="off"/>`;
             }
           }
         }
@@ -469,13 +480,13 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
   }
   //#endregion
 
-  private _submit(): void {
+  private async _submit() {
     try {
-      this._applicationDetails();
-      console.log(this.dynamicField);
-      // this._saveAsset(this.accessToken);
+      await this._applicationDetails();
+      this._saveAsset(this.accessToken);
     }
     catch (error) {
+      console.log(error);
       return error;
     }
   }
@@ -510,6 +521,7 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
     });
   }
 
+  //#region GETs and populate dropdowns
   private _getOfficesList() {
     let html: string = '';
     this.context.spHttpClient.get(`${this.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('${commonConfig.List.OfficeList}')/items`, SPHttpClient.configurations.v1)
@@ -547,7 +559,7 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
         mapObj.FloorNumber).indexOf(obj.FloorNumber) == pos;
     });
 
-    this.floorNoFiltered.forEach((item: IOffices) => {
+    this.ListOfOffices.forEach((item: IOffices) => {
       if (idOfficeValue == item.Title) {
         html += `
         <option value="${item.FloorNumber}">${item.FloorNumber}</option>`;
@@ -606,10 +618,12 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
 
   private _getLastSequenceAssetRefNo(token: string) {
     var idBuildingValue = (<HTMLInputElement>document.getElementById('myListBuilding')).value;
+    var idOfficeValue = (<HTMLInputElement>document.getElementById('myListOffice')).value;
     var idFloorValue = (<HTMLInputElement>document.getElementById('myListFloor')).value;
+
     $.ajax({
       type: 'GET',
-      url: commonConfig.baseUrl + '/api/Asset/GetLastSequence?buildingName=' + idBuildingValue + '&floorNo=' + idFloorValue,
+      url: commonConfig.baseUrl + '/api/Asset/GetLastSequence?buildingName=' + idBuildingValue + '&floorNo=' + idFloorValue + '&officeName=' + idOfficeValue,
       headers: {
         Authorization: 'Bearer ' + token
       },
@@ -625,19 +639,24 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
   private _populateAssetRefNo(sequenceNum: number) {
     var buildingNameValue = (<HTMLInputElement>document.getElementById('myListBuilding')).value;
     var floorNoValue = (<HTMLInputElement>document.getElementById('myListFloor')).value;
+    var idOfficeValue = (<HTMLInputElement>document.getElementById('myListOffice')).value;
 
     var nextSequenceNumber: number = +sequenceNum;
-    nextSequenceNumber += 1;
     var strNextSequenceNumber: string = nextSequenceNumber.toString();
     while (strNextSequenceNumber.length < 3) {
       strNextSequenceNumber = "0" + strNextSequenceNumber;
     }
     this.ListOfBuildings.forEach((itemBuilding: IBuildings) => {
       if (buildingNameValue == itemBuilding.Title) {
-        $('#idAssetRefNo').val(itemBuilding.ShortForm + "_" + floorNoValue + "_" + strNextSequenceNumber);
+        this.ListOfOfficeFiltered.forEach((itemOffice: IOffices) => {
+          if (idOfficeValue == itemOffice.Title) {
+            $('#idAssetRefNo').val(itemBuilding.ShortForm + "_" + floorNoValue + "_" + itemOffice.ShortForm + "_" + strNextSequenceNumber);
+          }
+        });
       }
     });
   }
+  //#endregion
 
   private _saveAsset(token: string): void {
     try {
@@ -652,15 +671,21 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
         contentType: 'application/json',
         success: (result) => {
           var url = new URL(`https://frcidevtest.sharepoint.com/sites/Lincoln/SitePages/${commonConfig.Page.AssetList}`);
+          // console.log("OKAY");
+          // console.log("JSON.stringify(this.dynamicField)");
+          // console.log(JSON.stringify(this.dynamicField));
+          alert("Asset saved.");
           Navigation.navigate(url.toString(), true);
           return result;
         },
         error: (result) => {
+          console.log(result);
           return result;
         }
       });
     }
     catch (error) {
+      console.log(error);
       return error;
     }
   }
@@ -670,21 +695,22 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
     var myParm = queryParms.get("refNo");
     if (myParm) {
       var refNo = myParm.trim();
-    }
 
-    $.ajax({
-      type: 'GET',
-      url: commonConfig.baseUrl + `/api/Asset/GetAssetByRefNo?refNo=${refNo}`,
-      headers: {
-        Authorization: 'Bearer ' + token
-      },
-      success: (result) => {
-        this._populateFormById(result);
-      },
-      error: (result) => {
-        return result;
-      }
-    });
+      $.ajax({
+        type: 'GET',
+        url: commonConfig.baseUrl + `/api/Asset/GetAssetByRefNo?refNo=${refNo}`,
+        headers: {
+          Authorization: 'Bearer ' + token
+        },
+        success: (result) => {
+          this.formDetails = result;
+          this._populateFormById(result);
+        },
+        error: (result) => {
+          return result;
+        }
+      });
+    }
   }
 
   private _checkURLParameter() {
@@ -703,92 +729,102 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
   }
 
   private _populateFormById(formDetailsList: IDynamicField) {
-    if (this._checkURLParameter()) {
-      $("#btnSubmit").html("Update");
+    try {
+      if (this._checkURLParameter()) {
+        $("#btnSubmit").html("Update");
 
-      $('#idAssetName').val(formDetailsList.Name);
-      $('#idAssetRefNo').val(formDetailsList.ReferenceNumber);
-      $('#myListFloor').val(formDetailsList.FloorNo);
-      $('#myListBuilding').val(formDetailsList.BuildingName);
-      $('#idOwnership').val(formDetailsList.Ownership);
-      $('#typeOfAssetList').val(formDetailsList.TypeOfAsset);
-      $('#idServicingPeriod').val(formDetailsList.ServicingPeriod);
-      $('#idComments').val(formDetailsList.Comment);
+        $('#idAssetName').val(formDetailsList.Name);
+        $('#idAssetRefNo').val(formDetailsList.ReferenceNumber);
+        $('#myListFloor').val(formDetailsList.FloorNo);
+        $('#myListBuilding').val(formDetailsList.BuildingName);
+        $('#idOwnership').val(formDetailsList.Ownership);
+        $('#typeOfAssetList').val(formDetailsList.TypeOfAsset);
+        $('#idServicingPeriod').val(formDetailsList.ServicingPeriod);
+        $('#idComments').val(formDetailsList.Comment);
 
-      if (formDetailsList.Brand != null || formDetailsList.Power != null) {
+        this.ListOfBuildings.forEach((item: IBuildings) => {
+          if (formDetailsList.BuildingName == item.Title) {
+            $('#idBuildingLocation').val(item.Location);
+
+            this.ListOfOffices.forEach((officeItem: IOffices) => {
+              if (officeItem.FloorNumber != null) {
+                if (officeItem.BuildingIDId == item.ID && formDetailsList.FloorNo == officeItem.FloorNumber.toString()) {
+                  $('#myListOffice').val(officeItem.Title);
+                }
+              }
+            });
+          }
+        });
+
         this._renderFieldRequiredList(this.arrFieldsRequired);
 
-        if (formDetailsList.Brand != null) {
-          $('#idBrand').val(formDetailsList.Brand);
-          $('#idBrand').prop('disabled', true);
-        }
+        this.arrFieldsRequired.forEach((item: IFieldsRequiredList) => {
+          if (item.TypeOfAssets.Title == formDetailsList.TypeOfAsset) {
+            var itemTitle = item.Title.replace(/ /g, "");
 
-        if (formDetailsList.Power != null) {
-          $('#idPower').val(formDetailsList.Power);
-          $('#idPower').prop('disabled', true);
-        }
-      }
-
-      if (formDetailsList.LastServicingDate == null) {
-        $('#idLastServicingDate').val("");
-      }
-      else {
-        $('#idLastServicingDate').val(formDetailsList.LastServicingDate.substring(0, 10));
-      }
-
-      if ((formDetailsList.ServicingRequired) == true) {
-        $('#servicingRequired').prop("checked", true);
-      }
-      else {
-        $('#servicingNotRequired').prop("checked", true);
-      }
-
-      this.ListOfBuildings.forEach((item: IBuildings) => {
-        if (formDetailsList.BuildingName == item.Title) {
-          $('#idBuildingLocation').val(item.Location);
-
-          this.ListOfOffices.forEach((officeItem: IOffices) => {
-            if (officeItem.FloorNumber != null) {
-              if (officeItem.BuildingIDId == item.ID && formDetailsList.FloorNo == officeItem.FloorNumber.toString()) {
-                $('#myListOffice').val(officeItem.Title);
-              }
+            if (itemTitle.indexOf("Date") >= 0) {
+              $(`#id${itemTitle}`).val(formDetailsList[`${itemTitle}`].substring(0, 10));
             }
-          });
-        }
-      });
-
-      if (formDetailsList.AttachmentFileName.length == 0) {
-        $('#attachmentTable').hide();
-      }
-      else {
-        $('#attachmentTable').show();
-        formDetailsList.AttachmentFileName.forEach((file: string) => {
-          var arrBuffer = this._base64ToArrayBuffer(file);
-          this._saveAndDownloadFile(arrBuffer, file);
+            else {
+              $(`#id${itemTitle}`).val(formDetailsList[`${itemTitle}`]);
+            }
+          }
         });
-      }
 
-      //Disable all fields on view
-      $('#idAssetName').prop('disabled', true);
-      $('#idAssetRefNo').prop('disabled', true);
-      $('#myListFloor').prop('disabled', true);
-      $('#myListBuilding').prop('disabled', true);
-      $('#idOwnership').prop('disabled', true);
-      $('#typeOfAssetList').prop('disabled', true);
-      $('#idServicingPeriod').prop('disabled', true);
-      $('#idComments').prop('disabled', true);
-      $('#idLastServicingDate').prop('disabled', true);
-      $('#idBuildingLocation').prop('disabled', true);
-      $('#myListOffice').prop('disabled', true);
-      $('#servicingNotRequired').prop('disabled', true);
-      $('#servicingRequired').prop('disabled', true);
+        if (formDetailsList.LastServicingDate == null) {
+          $('#idLastServicingDate').val("");
+        }
+        else {
+          $('#idLastServicingDate').val(formDetailsList.LastServicingDate.substring(0, 10));
+        }
+
+        if ((formDetailsList.ServicingRequired) == true) {
+          $('#servicingRequired').prop("checked", true);
+          this._checkIfServicingRequiredChecked();
+        }
+        else {
+          $('#servicingNotRequired').prop("checked", true);
+          this._checkIfServicingNotRequiredChecked();
+        }
+
+        if (formDetailsList.AssetAttachments == null) {
+          $('#attachmentTable').hide();
+        }
+        else {
+          $('#attachmentTable').show();
+          if (fileInfos.length == 0) {
+            formDetailsList.AssetAttachments.forEach(async(file: IAttachmentDetails) => {
+              await fileInfos.push({
+                "AttachmentGUID": file.AttachmentGUID,
+                "AttachmentFileName": file.AttachmentFileName,
+                "AttachmentFileContent": file.AttachmentFileContent
+              });
+            });
+          }
+          this._populateAttachmentTable();
+        }
+
+        //Disable all fields on view
+        $('#idAssetName').prop('disabled', true);
+        $('#idAssetRefNo').prop('disabled', true);
+        $('#myListFloor').prop('disabled', true);
+        $('#myListBuilding').prop('disabled', true);
+        $('#idOwnership').prop('disabled', true);
+        $('#typeOfAssetList').prop('disabled', true);
+        $('#idBuildingLocation').prop('disabled', true);
+        $('#myListOffice').prop('disabled', true);
+      }
+    }
+    catch (error) {
+      console.log(error);
+      return error;
     }
   }
 
-  private _applicationDetails() {
+  private async _applicationDetails() {
     try {
       var servicingReq;
-      var attachmentArr: [{ AttachmentFileName: string, AttachmentFileContent: any }];
+      var attachmentDetails: IAttachmentDetails[] = [];
       var typeOfAssetsValue = (<HTMLInputElement>document.getElementById('typeOfAssetList')).value;
 
       if ($('#servicingNotRequired').is(':checked')) {
@@ -798,121 +834,129 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
         servicingReq = true;
       }
 
-      console.log("fileInfos.length: " + fileInfos.length);
-      if (fileInfos.length > 0) {
-        console.log("fileInfos:");
-        console.log(fileInfos);
-        fileInfos.forEach((file: any) => {
-          console.log("Name: " + file.name);
-          // console.log(fileByteArray);
-          attachmentArr.push({
-            AttachmentFileName: file.name,
-            AttachmentFileContent: file.content
+      await this._convertFileToBinary();
+
+      if (this._checkURLParameter()) {
+        if (fileInfos.length > 0) {
+          fileInfos.forEach((file: any) => {
+            if (!file.file) {
+              attachmentDetails.push({
+                AttachmentGUID : file.AttachmentGUID,
+                AttachmentFileName: file.AttachmentFileName,
+                AttachmentFileContent: file.AttachmentFileContent
+              });
+            }
+          });
+        }
+      }
+      if (this.mainFileByteArray.length > 0) {
+        this.mainFileByteArray.forEach((file: any) => {
+          attachmentDetails.push({
+            AttachmentGUID : file.AttachmentGUID,
+            AttachmentFileName: file.AttachmentFileName,
+            AttachmentFileContent: file.AttachmentFileContent
           });
         });
       }
       else {
-        attachmentArr = [{ AttachmentFileName: "", AttachmentFileContent: [] }];
+        attachmentDetails = [];
       }
-
-      console.log(fileByteArray);
-      console.log(attachmentArr);
-
+      
       this.dynamicField = {
         Name: (<HTMLInputElement>document.getElementById('idAssetName')).value,
         ReferenceNumber: (<HTMLInputElement>document.getElementById('idAssetRefNo')).value,
         BuildingName: (<HTMLInputElement>document.getElementById('myListBuilding')).value,
+        OfficeName: (<HTMLInputElement>document.getElementById('myListOffice')).value,
+        BuildingLocation: (<HTMLInputElement>document.getElementById('idBuildingLocation')).value,
         FloorNo: (<HTMLInputElement>document.getElementById('myListFloor')).value,
         Ownership: (<HTMLInputElement>document.getElementById('idOwnership')).value,
         TypeOfAsset: (<HTMLInputElement>document.getElementById('typeOfAssetList')).value,
         LastServicingDate: (<HTMLInputElement>document.getElementById('idLastServicingDate')).value,
         ServicingPeriod: (<HTMLInputElement>document.getElementById('idServicingPeriod')).value,
         Comment: (<HTMLInputElement>document.getElementById('idComments')).value,
-        AssetAttachments: attachmentArr,
+        AssetAttachments: attachmentDetails,
         ServicingRequired: servicingReq
       };
 
       this.arrFieldsRequired.forEach((item) => {
         if (item.TypeOfAssets.Title == typeOfAssetsValue) {
-          this.dynamicField[`${item.Title}`] = (<HTMLInputElement>document.getElementById(`id${item.Title}`)).value;
+          var itemTitle = item.Title.replace(/ /g, "");
+          this.dynamicField[`${itemTitle}`] = (<HTMLInputElement>document.getElementById(`id${itemTitle}`)).value;
         }
       });
-
-      console.log(this.dynamicField);
     }
     catch (error) {
       console.log(error);
+      return error;
     }
   }
 
   //#region File functions
-  private _base64ToArrayBuffer(fileContent: string) {
-    var binaryString = window.atob(fileContent);
-    var bytes = new Uint8Array(binaryString.length);
-    var arrBuffer = bytes.map((byte, i) => binaryString.charCodeAt(i));
-    return arrBuffer;
-  }
-
-  private _saveAndDownloadFile(arrayBuffer, fileName) {
-    var blob = new Blob([arrayBuffer]);
-    var link = document.createElement('a');
-    var url = URL.createObjectURL(blob);
-
-    var fileNameNoSpace = fileName.replace(/ /g, "");
-
-    this._populateAttachmentTable(fileNameNoSpace, fileName);
-  }
-
   private async _convertFileToBinary() {
-    var input = (<HTMLInputElement>document.getElementById("customFile"));
-    var fileCount = input.files.length;
-    for (var i = 0; i < fileCount; i++) {
-      var reader = new FileReader();
-      await reader.readAsArrayBuffer(input.files[0]);
-      reader.onload = () => {
-        filestream = reader.result;
-        fixarray = new Uint8Array(filestream);
-        for (let ii = 0; ii < fixarray.length; ii++) {
-          fileByteArray.push(fixarray[ii]);
+    try {
+      this.mainFileByteArray = [];
+      for (var file of fileInfos) {
+        if (file.file) {
+          let result = await this.readFile(file.file);
+          fileByteArray = [];
+          filestream = result;
+          fixarray = new Uint8Array(filestream);
+          for (var element of fixarray) {
+            fileByteArray.push(element);
+          }
+          this.mainFileByteArray.push({
+            "AttachmentGUID" : file.AttachmentGUID,
+            "AttachmentFileName" : file.AttachmentFileName,
+            "AttachmentFileContent" : fileByteArray
+          });
         }
-      };
+      }
     }
+    catch(error) {
+      console.log(error);
+    }
+  }
+
+  private readFile(file) {
+    return new Promise((resolve, reject) => {
+      var fr = new FileReader();  
+      fr.onload = () => {
+        resolve(fr.result);
+      };
+      fr.onerror = reject;
+      fr.readAsArrayBuffer(file);
+    });
   }
 
   private _uploadToAttachmentTable() {
     this._checkAttachmentTable();
     var fileCount = (<HTMLInputElement>document.getElementById("customFile")).files.length;
 
-    if (fileInfos.length > 0 && fileInfos.length == fileCount) {
+    if (fileInfos.length > 0 && tempFileInfos.length == fileCount) {
       $('#attachmentTable').show();
-      fileInfos.forEach((file: any) => {
-        var fileNameNoSpace = file.name.replace(/ /g, "");
-        arrFileNameNoSpace.push(fileNameNoSpace);
-        arrFileName.push(file.name);
-      });
 
-      this._populateAttachmentTable(arrFileNameNoSpace, arrFileName);
+      this._populateAttachmentTable();
     }
   }
 
-  private _populateAttachmentTable(fileNameNoSpace: string[], fileName: string[]) {
+  private _populateAttachmentTable() {
     let html: string = "";
 
-    for (let x = 0; x < fileNameNoSpace.length; x++) {
-      html += `<tr id="tr_${fileNameNoSpace[x]}"><td class="th-lg" scope="row">${fileName[x]}</td>
+    fileInfos.forEach((file: any) => {
+      var fileNameNoSpace = file.AttachmentFileName.replace(/ /g, "");
+      
+      html += `<tr id="tr_${fileNameNoSpace}_${file.AttachmentGUID}"><td class="th-lg" scope="row">${file.AttachmentFileName}</td>
       <td>
         <ul class="list-inline m-0">
           <!--<li class="list-inline-item">
             <button class="btn btn-secondary btn-sm rounded-circle" type="button" data-toggle="tooltip" data-placement="top" title="View"><i class="fa fa-eye"></i></button>
           </li>-->
           <li class="list-inline-item delete">
-            <button class="btn btn-secondary btn-sm rounded-circle" id="btn_${fileNameNoSpace[x]}" type="button" data-toggle="tooltip" data-placement="top" title="Delete"><i class="fa fa-trash"></i></button>
+            <button class="btn btn-secondary btn-sm rounded-circle" id="btn_${fileNameNoSpace}_${file.AttachmentGUID}" type="button" data-toggle="tooltip" data-placement="top" title="Delete"><i class="fa fa-trash"></i></button>
           </li>
         </ul>
       </td></tr>`;
-    }
-
-    this._convertFileToBinary();
+    });
 
     const listContainer: Element = this.domElement.querySelector('#tableAttachmentContainer');
     listContainer.innerHTML = html;
@@ -920,12 +964,16 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
     $("#tableAttachmentContainer").on('click', '.delete', function () {
       try {
         var trid = $(this).closest('tr').attr('id').substring(3);
+        var tridFields = trid.split('_');
+        var tridFileName = tridFields[0];
+        var tridId = tridFields[1];
+
         if (fileInfos.length > 0) {
           $(this).closest('tr').remove();
           fileInfos.forEach((file: any) => {
-            var fileNameReplace = file.name.replace(/ /g, "");
-            if (trid == fileNameReplace) {
-              fileInfos = fileInfos.filter(item => item.name !== file.name);
+            var fileNameReplace = file.AttachmentFileName.replace(/ /g, "");
+            if (tridFileName == fileNameReplace && tridId == file.AttachmentGUID) {
+              fileInfos = fileInfos.filter(item => item.AttachmentGUID !== file.AttachmentGUID);
               if (fileInfos.length == 0) {
                 $('#attachmentTable').hide();
               }
@@ -938,6 +986,7 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
         }
       }
       catch(error) {
+        console.log(error);
         return error;
       }
     });
@@ -947,18 +996,28 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
     var input = (<HTMLInputElement>document.getElementById("customFile"));
     var fileCount = input.files.length;
     try{
+      tempFileInfos = [];
       for (var i = 0; i < fileCount; i++) {
         var file = input.files[i];
         var reader = new FileReader();
         reader.onload = ((file1) => {
           return (e) => {
             this.fileGUID = Guid.create();
+
             fileInfos.push({
-              "id": this.fileGUID.toString(),
-              "name": file1.name,
-              "content": e.target.result
+              "AttachmentGUID": this.fileGUID.toString(),
+              "AttachmentFileName": file1.name,
+              "AttachmentFileContent": e.target.result,
+              "file" : file1
             });
-              this._uploadToAttachmentTable();
+            
+            tempFileInfos.push({
+              "AttachmentGUID": this.fileGUID.toString(),
+              "AttachmentFileName": file1.name,
+              "AttachmentFileContent": e.target.result
+            });
+            
+            this._uploadToAttachmentTable();
           };
         })(file);
         reader.readAsArrayBuffer(file);
@@ -981,8 +1040,8 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
   private _checkIfServicingNotRequiredChecked(): void {
     if ($('#servicingNotRequired').is(':checked')) {
       $('#idLastServicingDate').prop("disabled", true);
-      $('#idLastServicingDate').val("");
       $('#idServicingPeriod').prop("disabled", true);
+      $('#idLastServicingDate').val("");
       $('#idServicingPeriod').val("");
     }
   }

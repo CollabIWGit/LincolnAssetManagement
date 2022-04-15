@@ -63,7 +63,6 @@
     color: #f0a500 ;
   }
   
-  
   .sidebar-wrapper ul li {
     font-size: 16px;
     font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -105,8 +104,6 @@
     color: #fcfbfa;
   }
   
-  
-  
   .table>thead:first-child>tr:first-child>th {
     border-top: 0;
     text-align: center;
@@ -119,10 +116,6 @@
     border-top: 1px solid #ddd;
     text-align: center;
   }
-  
-  
-  
-  
   .navnav {
     float: left;
     height: 68.39px;
@@ -173,6 +166,10 @@
     border-bottom: 1px solid #f0a500;
     transition: all .3s ease;
   }
+
+  #sidebar-wrapper ul li a {
+    cursor: pointer;
+  }
   
   .sidebar-wrapper ul li a:active,
   .sidebar-wrapper ul li a:focus {
@@ -220,7 +217,6 @@
     white-space: normal;
   }
   
-  
   @media(min-width:768px) {
     #wrapper {
         padding-left: 250px;
@@ -251,8 +247,6 @@
     color: #fff;
     font-family:tahoma;
   }
-  
-  
   
     #sidebar-wrapper {
         width: 250px;
@@ -299,4 +293,27 @@
         margin-right: 0;
     }
   
+    .checkbox-lg .custom-control-label::before,
+    .checkbox-lg .custom-control-label::after {
+      top: .8rem;
+      width: 1.55rem;
+      height: 1.55rem;
+    }
+
+    .checkbox-lg .custom-control-label {
+      padding-top: 13px;
+      padding-left: 6px;
+    }
+
+    .card {
+      margin-top: 5px;
+      margin-bottom: 5px;
+      /* padding: 0 3%; */
+      background-color:#f9f9f9;
+      border: 1px solid #e5e5e5;
+    }
+
+    .input-field {
+      margin-right: 1em;
+    }
   }

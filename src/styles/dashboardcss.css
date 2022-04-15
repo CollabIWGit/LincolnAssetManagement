@@ -20,14 +20,16 @@
 }
 
 .wrapper.d-flex.align-items-stretch {
-  background-color: #e3e3e3;
+  /* background-color: #e3e3e3; */
+  background-color: rgb(252, 252, 252);
 }
 
 body, .container {
   font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: 12px;
   color: #b9b9b9;
-  background-color: #e3e3e3;
+  /* background-color: #e3e3e3; */
+  background-color: rgb(252, 252, 252);
 }
 
 .inner-container {
@@ -117,6 +119,6 @@ select:focus, select:active {
   font-weight: 550;
 }
 
-.i_b_ada2ac09 {
-  background-color: rgb(252, 252, 252);
+hr.lineBreak {
+  border-top: 1px solid rgb(252, 252, 252);
 }
