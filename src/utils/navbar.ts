@@ -10,11 +10,6 @@ export class navbar {
                     <span class="fa fa-home mr-3"> </span>Home
                 </a>
             </li>
-                <li id="adminMgtComponent">
-                    <a id="adminMgt">
-                        <span class="fa fa-sliders-h mr-3"> </span>Admin Management
-                    </a>
-                </li>
             <li id="userMgtComponent">
                 <a id="UserMgt">
                     <span class="fa fa-user mr-3"> </span>User Management

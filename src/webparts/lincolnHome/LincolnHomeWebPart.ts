@@ -62,6 +62,16 @@ export default class LincolnHomeWebPart extends BaseClientSideWebPart<ILincolnHo
                           </div>
                         </div>
                       </div>
+                      <div id="userMgt" class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-6">
+                        <div class="mdc-card py-3 pl-2 d-flex flex-row align-item-center dashboardCard">
+                          <div class="mdc--tile mdc--tile-success rounded">
+                            <i class="fa fa-user mr-3 fa-fw text-white icon-md"></i>
+                          </div>
+                          <div class="text-wrapper pl-1">
+                            <h6 class="mdc-typography--display1 font-weight-bold mb-1">User Management</h6>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -81,6 +91,7 @@ export default class LincolnHomeWebPart extends BaseClientSideWebPart<ILincolnHo
   private setButtonsEventHandlers(): void {
 		document.getElementById('caseMgt').addEventListener('click', () => this._navigateToCaseMgt());
     document.getElementById('assetMgt').addEventListener('click', () => this._navigateToAssetMgt());
+    document.getElementById('userMgt').addEventListener('click', () => this._navigateToUserMgt());
 	}
 
   private _navigateToCaseMgt() {
@@ -89,6 +100,10 @@ export default class LincolnHomeWebPart extends BaseClientSideWebPart<ILincolnHo
 
   private _navigateToAssetMgt() {
     Navigation.navigate(`${this.context.pageContext.web.absoluteUrl}/SitePages/${commonConfig.Page.AssetList}`, true);
+  }
+
+  private _navigateToUserMgt() {
+    Navigation.navigate(`${this.context.pageContext.web.absoluteUrl}/SitePages/${commonConfig.Page.UsersList}`, true);
   }
 
   protected get dataVersion(): Version {

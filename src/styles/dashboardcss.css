@@ -107,6 +107,10 @@ select:focus, select:active {
   margin-bottom: 5%;
 }
 
+#btnFilter {
+  width: 100%;
+}
+
 #btnFilter:hover {
   background-color: #f0a500;
   border-color: #f0a500;

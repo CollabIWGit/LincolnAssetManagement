@@ -147,18 +147,18 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
                     <div class="form-row">
                       <div class="col-md-6">
                         <div>
-                          <h7>Name Of Asset</h7>
-                        </div>
-                        <div class="input-group">
-                          <input type="text" id="idAssetName" autocomplete="off"/>
-                        </div>
-                      </div>
-                      <div class="col-md-6">
-                        <div>
                           <h7>Asset Reference No.</h7>
                         </div>
                         <div class="input-group">
                           <input type="text" id="idAssetRefNo" readonly autocomplete="off"/> 
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div>
+                          <h7>Asset Description</h7>
+                        </div>
+                        <div class="input-group">
+                          <input type="text" id="idAssetName" autocomplete="off"/>
                         </div>
                       </div>
                     </div>

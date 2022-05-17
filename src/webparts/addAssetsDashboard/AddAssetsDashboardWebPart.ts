@@ -19,13 +19,15 @@ require('../../../node_modules/bootstrap/dist/css/bootstrap.min.css');
 require('../../../node_modules/@fortawesome/fontawesome-free/css/all.min.css');
 require('../../styles/dashboardcss.css');
 require('../../styles/spcommon.css');
-// require('../../styles/navbar.css');
 require('../../styles/test.css');
 
 import * as commonConfig from "../../utils/commonConfig.json";
 
 var selectedLocationArr: any = [];
 var selectedOfficeArr: any = [];
+var filteredOfficeName: any = [];
+var filteredTypeOfAsset: any = [];
+var filteredAssetRefNo: any = [];
 
 //#region Interfaces
 export interface IAddAssetsDashboardWebPartProps {
@@ -106,7 +108,6 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
   private static accessToken: string = "";
   private accessTokenValue: string = "";
   private ListOfAssets: ITypeOfAssetList[];
-  private ListOfAssetsFiltered: IDynamicField[];
   private assetList: IDynamicField[];
   private assetByFilterList: IDynamicField[];
   private ListOfBuildings: IBuildings[];
@@ -180,7 +181,7 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
                       </div>
                       <hr class="lineBreak">
                       <div class="form-row">
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                           <div>
                             <h7>Type Of Asset</h7>
                           </div>
@@ -190,7 +191,7 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
                             </datalist>
                           </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                           <div>
                             <h7>Asset Reference No</h7>
                           </div>
@@ -200,43 +201,10 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
                             </datalist>
                           </div>
                         </div>
-                        <div class="col-md-4">
-                          <div>
-                            <h7>Asset Name</h7>
-                          </div>
-                          <div class="input-group">
-                            <input list="idAssetName" id="myListAssetName" name="myBrowserAssetName" autocomplete="off" />
-                            <datalist id="idAssetName">
-                            </datalist>
-                          </div>
-                        </div>
                       </div>
-                      <!--<div class="form-row">
-                        <div class="col-md-6">
-                          <div>
-                            <h7>Location</h7>
-                          </div>
-                          <div class="input-group">
-                            <input list="idLocation" id="myListLocation" name="myBrowserLocation" autocomplete="off" />
-                            <datalist id="idLocation">
-                            </datalist>
-                          </div>
-                        </div>
-                        <div class="col-md-6">
-                          <div>
-                            <h7>Office</h7>
-                          </div>
-                          <div class="input-group">
-                            <input list="idOffice" id="myListOffice" name="myBrowserOffice" autocomplete="off" />
-                            <datalist id="idOffice">
-                            </datalist>
-                            </div>
-                          </div>
-                        </div>
-                      </div>-->
                       <div class="form-row btnFilterRow">
-                        <div class="col-md-1 offset-11">
-                          <button type="button" class="btn btn-sm btn-secondary" id="btnFilter">Filter</button>
+                        <div class="col-md-2 offset-10">
+                          <button type="button" class="btn btn-sm btn-secondary" id="btnFilter">Search</button>
                         </div>
                       </div>
                       <div id="divContainer">
@@ -269,11 +237,9 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
   }
 
   private AddEventListeners(): any {
-    document.getElementById('btnFilter').addEventListener('click', () => this._displayAssets(this.assetByFilterList));
+    document.getElementById('btnFilter').addEventListener('click', () => this._displayAssets());
     document.getElementById('btnFilter').addEventListener('click', () => this._loader());
-    // document.getElementById('myListLocation').addEventListener('change', () => this._getOfficesListFiltered());
-    document.getElementById('myListTypeOfAsset').addEventListener('change', () => this._getListOfRefNo());
-    document.getElementById('myListTypeOfAsset').addEventListener('change', () => this._getListOfAssetName());
+    document.getElementById('idTypeOfAsset').addEventListener('click', () => this._getAssetsByFilters(this.accessTokenValue));
   }
 
   private _navigateToAddAssetForm() {
@@ -297,10 +263,18 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
     try {
       let html: string = '';
 
-      this.assetByFilterList.forEach((asset: IDynamicField) => {
-        html += `
-          <option value="${asset.ReferenceNumber}">${asset.ReferenceNumber}</option>`;
-      });
+      if (selectedOfficeArr.length > 0) {
+        filteredAssetRefNo.forEach((item: string) => {
+          html += `
+          <option value="${item}">${item}</option>`;
+        });
+      }
+      else {
+        this.assetByFilterList.forEach((asset: IDynamicField) => {
+          html += `
+            <option value="${asset.ReferenceNumber}">${asset.ReferenceNumber}</option>`;
+        });
+      }
 
       const listContainer: Element = this.domElement.querySelector('#idAssetReferenceNo');
       listContainer.innerHTML = html;
@@ -311,42 +285,15 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
     }
   }
 
-  private async _getListOfAssetName() {
-    try {
-      let html: string = '';
-
-      this.assetByFilterList.forEach((asset: IDynamicField) => {
-        html += `
-          <option value="${asset.Name}">${asset.Name}</option>`;
-      });
-
-      const listContainer: Element = this.domElement.querySelector('#idAssetName');
-      listContainer.innerHTML = html;
-    }
-    catch (error) {
-      console.log(error);
-      return error;
-    }
-  }
-
   private _getTypeOfAssetList() {
     try {
-      let html: string = '';
       this.context.spHttpClient.get(`${this.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('${commonConfig.List.TypeOfAssetList}')/items`, SPHttpClient.configurations.v1)
       .then(response => {
         return response.json()
-          .then((items: any): void => {
+          .then(async (items: any): Promise<void> => {
             this.ListOfAssets = items.value;
 
-            this._getAssetsByFilters(this.accessTokenValue);
-
-            this.ListOfAssets.forEach((item: ITypeOfAssetList) => {
-              html += `
-              <option value="${item.Title}">${item.Title}</option>`;
-            });
-  
-            const listContainer: Element = this.domElement.querySelector('#idTypeOfAsset');
-            listContainer.innerHTML = html;
+            await this._displayTypeOfAssetList();
           });
       });
     }
@@ -356,36 +303,25 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
     }
   }
 
-  private _getOfficesListFiltered() {
+  private _displayTypeOfAssetList() {
     try {
       let html: string = '';
-      var locationValue = (<HTMLInputElement>document.getElementById('myListLocation')).value;
-      this.context.spHttpClient.get(`${this.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('${commonConfig.List.OfficeList}')/items`, SPHttpClient.configurations.v1)
-        .then(response => {
-          return response.json()
-            .then((items: any): void => {
-              this.ListOfOffices = items.value;
 
-              this.ListOfOfficeFiltered = this.ListOfOffices.filter((obj, pos, arr) => {
-                return arr.map(mapObj =>
-                  mapObj.Title).indexOf(obj.Title) == pos;
-              });
-
-              this.ListOfBuildings.forEach((building: IBuildings) => {
-                if (locationValue == building.Location) {
-                  this.ListOfOfficeFiltered.forEach((office: IOffices) => {
-                    if (building.ID == office.BuildingIDId) {
-                      html += `
-                        <option value="${office.Title}">${office.Title}</option>`;
-                    }
-                  });
-                }
-              });
-
-              const listContainer: Element = this.domElement.querySelector('#idOffice');
-              listContainer.innerHTML = html;
-            });
+      if (selectedOfficeArr.length > 0) {
+        filteredTypeOfAsset.forEach((item: string) => {
+          html += `
+          <option value="${item}">${item}</option>`;
         });
+      }
+      else {
+        this.ListOfAssets.forEach((item: ITypeOfAssetList) => {
+          html += `
+          <option value="${item.Title}">${item.Title}</option>`;
+        });
+      }
+
+      const listContainer: Element = this.domElement.querySelector('#idTypeOfAsset');
+      listContainer.innerHTML = html;
     }
     catch (error) {
       console.log(error);
@@ -395,7 +331,6 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
 
   private _getAllOffices() {
     try {
-      let html: string = '';
       this.context.spHttpClient.get(`${this.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('${commonConfig.List.OfficeList}')/items`, SPHttpClient.configurations.v1)
         .then(response => {
           return response.json()
@@ -406,14 +341,6 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
                 return arr.map(mapObj =>
                   mapObj.Title).indexOf(obj.Title) == pos;
               });
-
-              // this.ListOfOfficeFiltered.forEach((office: IOffices) => {
-              //   html += `
-              //     <option value="${office.Title}">${office.Title}</option>`;
-              // });
-
-              // const listContainer: Element = this.domElement.querySelector('#idOffice');
-              // listContainer.innerHTML = html;
 
               this._officeFilters();
             });
@@ -434,14 +361,6 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
             .then((items: any): void => {
               this.ListOfBuildings = items.value;
 
-              // this.ListOfBuildings.forEach((item: IBuildings) => {
-              //   html += `
-              //   <option value="${item.Location}">${item.Location}</option>`;
-              // });
-    
-              // const listContainer: Element = this.domElement.querySelector('#idLocation');
-              // listContainer.innerHTML = html;
-
               this._locationFilters();
             });
         });
@@ -455,8 +374,8 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
   private async _getAssetsByFilters(token: string) {
     try {
       var assetRefNoValue = (<HTMLInputElement>document.getElementById('myListAssetReferenceNo')).value;
-      var assetNameValue = (<HTMLInputElement>document.getElementById('myListAssetName')).value;
       var typeOfAssetValue = (<HTMLInputElement>document.getElementById('myListTypeOfAsset')).value;
+      var assetNameValue = "";
       var locationValue = "";
       var officeValue = "";
 
@@ -483,9 +402,8 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
           Authorization: 'Bearer ' + token
         },
         success: (result) => {
-            this.assetByFilterList = result;
-            this._getListOfRefNo();
-            this._getListOfAssetName();
+          this.assetByFilterList = result;
+          this._getListOfRefNo();
         },
         error: (result) => {
           console.log(result);
@@ -499,9 +417,16 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
     }
   }
 
-  private _displayAssets(assetLists: IDynamicField[]) {
-    if (assetLists.length > 0) {
-      this._renderTable(assetLists);
+  private async _displayAssets() {
+    await this._getAssetsByFilters(this.accessTokenValue);
+    if (this.assetByFilterList.length > 0) {
+      var table = $('#tbl_asset_list').DataTable();
+
+      if (table.data().any() ) {
+        table.clear().draw();
+        table.destroy();
+      }
+      this._renderTable(this.assetByFilterList);
       this._renderTableAsync();
     }
     else {
@@ -532,15 +457,17 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
         var element = <HTMLInputElement> document.getElementById(`${elementId}`);
         if (element.checked) {
           selectedLocationArr.push(elementId);
-          await this._getAssetsByFilters(this.accessTokenValue);
         }
         else {
           selectedLocationArr.forEach(async (item, index) => {
             if (item == elementId) {
               selectedLocationArr.splice(index, 1);
-              await this._getAssetsByFilters(this.accessTokenValue);
             }
           });
+        }
+
+        if (selectedLocationArr.length > 0) {
+          await this._filterOfficesListOnLocationChange();
         }
       });
     }
@@ -553,16 +480,30 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
   private _officeFilters() {
     try {
       let html: string = "";
+      selectedOfficeArr = [];
 
-      this.ListOfOfficeFiltered.forEach((item: IOffices) => {
-        html += `
-        <div class="input-field">
-          <div class="custom-control custom-checkbox">
-            <input type="checkbox" class="custom-control-input office" id="${item.Title}" name="${item.Title}" value="${item.Title}">
-            <label for="${item.Title}" class="custom-control-label"> ${item.Title}</label><br>
-          </div>
-        </div>`;
-      });
+      if (selectedLocationArr.length > 0) {
+        filteredOfficeName.forEach((officeName: string) => {
+          html += `
+          <div class="input-field">
+            <div class="custom-control custom-checkbox">
+              <input type="checkbox" class="custom-control-input office" id="${officeName}" name="${officeName}" value="${officeName}">
+              <label for="${officeName}" class="custom-control-label"> ${officeName}</label><br>
+            </div>
+          </div>`;
+        });
+      }
+      else {
+        this.ListOfOfficeFiltered.forEach((item: IOffices) => {
+          html += `
+          <div class="input-field">
+            <div class="custom-control custom-checkbox">
+              <input type="checkbox" class="custom-control-input office" id="${item.Title}" name="${item.Title}" value="${item.Title}">
+              <label for="${item.Title}" class="custom-control-label"> ${item.Title}</label><br>
+            </div>
+          </div>`;
+        });
+      }
 
       const listContainer: Element = this.domElement.querySelector('#officeFilters');
       listContainer.innerHTML = html;
@@ -572,15 +513,20 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
         var element = <HTMLInputElement> document.getElementById(`${elementId}`);
         if (element.checked) {
           selectedOfficeArr.push(elementId);
-          await this._getAssetsByFilters(this.accessTokenValue);
         }
         else {
           selectedOfficeArr.forEach(async (item, index) => {
             if (item == elementId) {
               selectedOfficeArr.splice(index, 1);
-              await this._getAssetsByFilters(this.accessTokenValue);
             }
           });
+        }
+
+        if (selectedOfficeArr.length > 0) {
+          await this._filterAssetsOnOfficeChange();
+        }
+        else {
+          await this._displayTypeOfAssetList();
         }
       });
     }
@@ -588,6 +534,67 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
       console.log(error);
       return error;
     }
+  }
+
+  private _filterOfficesListOnLocationChange() {
+    filteredOfficeName = [];
+    filteredTypeOfAsset = [];
+    filteredAssetRefNo = [];
+
+    selectedLocationArr.forEach((location: string) => {
+      this.ListOfBuildings.forEach((building: IBuildings) => {
+        if (building.Location == location) {
+          this.ListOfOffices.forEach((office: IOffices) => {
+            if (building.ID == office.BuildingIDId) {
+              filteredOfficeName.push(office.Title);
+            }
+          });
+        }
+      });
+    });
+
+    filteredOfficeName = filteredOfficeName.filter((element,index,self) => {
+      return index === self.indexOf(element);
+    });
+
+    this._officeFilters();
+  }
+
+  private _filterAssetsOnOfficeChange() {
+    filteredTypeOfAsset = [];
+    filteredAssetRefNo = [];
+
+    if (selectedLocationArr.length > 0) {
+      selectedLocationArr.forEach((location: string) => {
+        this.assetList.forEach((asset: IDynamicField) => {
+          if (asset.BuildingLocation == location) {
+            selectedOfficeArr.forEach((office: string) => {
+              if (asset.OfficeName == office) {
+                filteredTypeOfAsset.push(asset.TypeOfAsset);
+                filteredAssetRefNo.push(asset.ReferenceNumber);
+              }
+            });
+          }
+        });
+      });
+    }
+    else {
+      this.assetList.forEach((asset: IDynamicField) => {
+        selectedOfficeArr.forEach((office: string) => {
+          if (asset.OfficeName == office) {
+            filteredTypeOfAsset.push(asset.TypeOfAsset);
+            filteredAssetRefNo.push(asset.ReferenceNumber);
+          }
+        });
+      });
+    }
+    
+    filteredTypeOfAsset = filteredTypeOfAsset.filter((element,index,self) => {
+      return index === self.indexOf(element);
+    });
+
+    this._displayTypeOfAssetList();
+    this._getListOfRefNo();
   }
 
   private _getAccessTokenForDisplay() {
@@ -635,6 +642,7 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
         contentType: 'application/x-www-form-urlencoded',
         success: (result) => {
           this.accessTokenValue = result["access_token"];
+          this._getAllAssets(result["access_token"]);
           return this.accessTokenValue;
         },
         error: (result) => {
@@ -683,37 +691,24 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
 
   private _renderTable(listOfAssets: IDynamicField[]) {
     try {
-      var officeName: string = "";
       let html: string = `<table id="tbl_asset_list" class="table table-striped">
         <thead>
           <tr>
-            <th class="text-left">Asset Name</th>
-            <th class="text-left">Asset Reference No</th>
             <th class="text-left">Type of Assets</th>
-            <th class="text-left">Office</th>
+            <th class="text-left">Asset Reference No</th>
+            <th class="text-left">Asset Name</th>
             <th class="text-center">View</th>
             <th class="text-center">Delete</th>
           </tr>
         </thead>
         <tbody id="tb_asset_list">`;
+
       listOfAssets.forEach((item: IDynamicField) => {
-        this.ListOfBuildings.forEach((buildingItem: IBuildings) => {
-          if (item.BuildingName == buildingItem.Title) {
-            this.ListOfOffices.forEach((officeItem: IOffices) => {
-              if (officeItem.FloorNumber != null) {
-                if (officeItem.BuildingIDId == buildingItem.ID && item.FloorNo == officeItem.FloorNumber.toString()) {
-                  officeName = officeItem.Title;
-                }
-              }
-            });
-          }
-        });
         html += `
           <tr>
-            <td class="text-left">${item.Name}</td>
-            <td class="text-left">${item.ReferenceNumber}</td>
             <td class="text-left">${item.TypeOfAsset}</td>
-            <td class="text-left">${officeName}</td>
+            <td class="text-left">${item.ReferenceNumber}</td>
+            <td class="text-left">${item.Name}</td>
             <td class="text-center view">                
               <button class="btn btn-sm rounded-circle" id="btn_${item.ReferenceNumber}_View" type="button"><i class="fa fa-eye"></i></button>
             </td>
@@ -760,39 +755,34 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
         },
         responsive: true,
         columnDefs: [
-          { orderable: false, targets: [4, 5] }
+          { orderable: false, targets: [3, 4] }
         ],
         order: [[0, "asc"]]
       });
 
-      $('#AssetName').on('keyup', 'input', function () {
+      $('#TypeOfAssets').on('keyup', 'input', function () {
         table
           .columns(0)
           .search(this.value)
           .draw();
       });
+
       $('#AssetRefNo').on('keyup', 'input', function () {
         table
           .columns(1)
           .search(this.value)
           .draw();
       });
-      $('#TypeOfAssets').on('keyup', 'input', function () {
+
+      $('#AssetName').on('keyup', 'input', function () {
         table
           .columns(2)
-          .search(this.value)
-          .draw();
-      });
-      $('#Office').on('keyup', 'input', function () {
-        table
-          .columns(3)
           .search(this.value)
           .draw();
       });
 
       //Click view btn
       $('#tbl_asset_list').on('click', '.view', function() {
-      // $(".view").on('click', 'button', function (){
         var data = table.row($(this).parents('tr')).data();
         var refNo = data[1];
         var url = new URL(`https://frcidevtest.sharepoint.com/sites/Lincoln/SitePages/${commonConfig.Page.AddAssets}`);
@@ -826,7 +816,6 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
         else {
 
         }
-      // $(".delete").on('click', 'button', function (){
       });
     }
     catch (error) {
