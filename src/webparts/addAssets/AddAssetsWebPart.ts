@@ -671,9 +671,6 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
         contentType: 'application/json',
         success: (result) => {
           var url = new URL(`https://frcidevtest.sharepoint.com/sites/Lincoln/SitePages/${commonConfig.Page.AssetList}`);
-          // console.log("OKAY");
-          // console.log("JSON.stringify(this.dynamicField)");
-          // console.log(JSON.stringify(this.dynamicField));
           alert("Asset saved.");
           Navigation.navigate(url.toString(), true);
           return result;

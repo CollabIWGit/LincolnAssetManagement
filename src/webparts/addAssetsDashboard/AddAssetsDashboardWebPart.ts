@@ -631,7 +631,7 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
         client_id: 'myClientId',
         client_secret: 'myClientSecret',
         username: "roukaiyan@frci.net",
-        password: "Pa$$w0rd"
+        password: "Pa$$w0rd1"
       };
 
       $.ajax({
