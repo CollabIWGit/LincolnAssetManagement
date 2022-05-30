@@ -20,6 +20,7 @@
     "bootstrap": "^4.6.1",
     "datatables.net": "^1.11.4",
     "datatables.net-dt": "^1.11.4",
+    "glyphicons": "^0.2.0",
     "guid-typescript": "^1.0.9",
     "http-context": "^1.1.1",
     "jquery": "^3.6.0",
@@ -27,14 +28,14 @@
     "url-loader": "^4.1.1"
   },
   "devDependencies": {
-    "@microsoft/sp-build-web": "1.12.1",
-    "@microsoft/sp-tslint-rules": "1.12.1",
-    "@microsoft/sp-module-interfaces": "1.12.1",
-    "@microsoft/sp-webpart-workbench": "1.12.1",
     "@microsoft/rush-stack-compiler-3.7": "0.2.3",
-    "gulp": "~4.0.2",
-    "ajv": "~5.2.2",
+    "@microsoft/rush-stack-compiler-3.9": "0.4.47",
+    "@microsoft/sp-build-web": "1.12.1",
+    "@microsoft/sp-module-interfaces": "1.12.1",
+    "@microsoft/sp-tslint-rules": "1.12.1",
+    "@microsoft/sp-webpart-workbench": "1.12.1",
     "@types/webpack-env": "1.13.1",
-    "@microsoft/rush-stack-compiler-3.9": "0.4.47"
+    "ajv": "~5.2.2",
+    "gulp": "~4.0.2"
   }
 }

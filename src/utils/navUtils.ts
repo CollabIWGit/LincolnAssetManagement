@@ -5,39 +5,39 @@ import * as commonConfig from "./commonConfig.json";
 export class navUtils {
     public navTriggers() {
         $('#caseList').on('click', () => {
-            Navigation.navigate(`https://frcidevtest.sharepoint.com/sites/Lincoln/SitePages/${commonConfig.Page.CaseList}`, true);
+            Navigation.navigate(`https://lincolnrealtymu.sharepoint.com/sites/Lincoln/SitePages/${commonConfig.Page.CaseList}`, true);
         });
 
         $('#usersList').on('click', () => {
-            Navigation.navigate(`https://frcidevtest.sharepoint.com/sites/Lincoln/SitePages/${commonConfig.Page.UsersList}`, true);
+            Navigation.navigate(`https://lincolnrealtymu.sharepoint.com/sites/Lincoln/SitePages/${commonConfig.Page.UsersList}`, true);
         });
 
         $('#addUser').on('click', () => {
-            Navigation.navigate(`https://frcidevtest.sharepoint.com/sites/Lincoln/SitePages/${commonConfig.Page.AddUser}`, true);
+            Navigation.navigate(`https://lincolnrealtymu.sharepoint.com/sites/Lincoln/SitePages/${commonConfig.Page.AddUser}`, true);
         });
 
         $('#btnAdd').on('click', () => {
-            Navigation.navigate(`https://frcidevtest.sharepoint.com/sites/Lincoln/SitePages/${commonConfig.Page.AddCase}`, true);
+            Navigation.navigate(`https://lincolnrealtymu.sharepoint.com/sites/Lincoln/SitePages/${commonConfig.Page.AddCase}`, true);
         });
 
         $('#btnAddUser').on('click', () => {
-            Navigation.navigate(`https://frcidevtest.sharepoint.com/sites/Lincoln/SitePages/${commonConfig.Page.AddUser}`, true);
+            Navigation.navigate(`https://lincolnrealtymu.sharepoint.com/sites/Lincoln/SitePages/${commonConfig.Page.AddUser}`, true);
         });
 
         $('#addCase').on('click', () => {
-            Navigation.navigate(`https://frcidevtest.sharepoint.com/sites/Lincoln/SitePages/${commonConfig.Page.AddCase}`, true);
+            Navigation.navigate(`https://lincolnrealtymu.sharepoint.com/sites/Lincoln/SitePages/${commonConfig.Page.AddCase}`, true);
         });
 
         $('#home').on('click', () => {
-            Navigation.navigate(`https://frcidevtest.sharepoint.com/sites/Lincoln/SitePages/${commonConfig.Page.HomePage}`, true);
+            Navigation.navigate(`https://lincolnrealtymu.sharepoint.com/sites/Lincoln/SitePages/${commonConfig.Page.HomePage}`, true);
         });
 
         $('#addAsset').on('click', () => {
-            Navigation.navigate(`https://frcidevtest.sharepoint.com/sites/Lincoln/SitePages/${commonConfig.Page.AddAssets}`, true);
+            Navigation.navigate(`https://lincolnrealtymu.sharepoint.com/sites/Lincoln/SitePages/${commonConfig.Page.AddAssets}`, true);
         });
 
         $('#assetList').on('click', () => {
-            Navigation.navigate(`https://frcidevtest.sharepoint.com/sites/Lincoln/SitePages/${commonConfig.Page.AssetList}`, true);
+            Navigation.navigate(`https://lincolnrealtymu.sharepoint.com/sites/Lincoln/SitePages/${commonConfig.Page.AssetList}`, true);
         });
     }
 

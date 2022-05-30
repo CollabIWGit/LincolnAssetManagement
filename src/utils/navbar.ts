@@ -1,9 +1,9 @@
 export class navbar {
-    public cover: string = `<div id="cover"> <span class="glyphicon glyphicon-refresh w3-spin preloader-Icon"></span> loading...</div>`;
+    public cover: string = `<div id="cover"> <i class="fa-solid fa-rotate"></i> loading...</div>`;
 
     public navbar: string = `
     <div id="sidebar-wrapper">
-        <img id="imgLogo" src="https://frcidevtest.sharepoint.com/sites/Lincoln/SiteAssets/Lincoln-Realty-Logo-orange.png" alternate="lincoln-logo">
+        <img id="imgLogo" src="https://lincolnrealtymu.sharepoint.com/sites/Lincoln/SiteAssets/Lincoln-Realty-Logo-orange.png" alternate="lincoln-logo">
         <ul class="list-unstyled components mb-5">
             <li>
                 <a id="home">

@@ -3,6 +3,7 @@ import { IPropertyPaneConfiguration, PropertyPaneTextField } from '@microsoft/sp
 import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
 import { escape } from '@microsoft/sp-lodash-subset';
 import { Navigation } from 'spfx-navigation';
+import { SPComponentLoader } from '@microsoft/sp-loader';
 import { SPHttpClient, SPHttpClientResponse } from '@microsoft/sp-http';
 import * as strings from 'AddAssetsDashboardWebPartStrings';
 import * as $ from "jquery";
@@ -51,7 +52,7 @@ export interface IApplicationDetailsList {
 }
 
 export interface IAttachmentDetails {
-  AttachmentGUID : string;
+  AttachmentGUID: string;
   AttachmentFileName: string;
   AttachmentFileContent: any[];
 }
@@ -115,6 +116,13 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
   private ListOfOfficeFiltered: IOffices[];
 
   public render(): void {
+    SPComponentLoader.loadCss("https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css");
+    SPComponentLoader.loadScript("https://code.jquery.com/jquery-3.5.1.js");
+    SPComponentLoader.loadScript("https://cdn.datatables.net/1.11.4/js/jquery.dataTables.min.js");
+    SPComponentLoader.loadScript("https://cdn.datatables.net/fixedheader/3.2.1/js/dataTables.fixedHeader.min.js");
+    SPComponentLoader.loadScript("https://cdn.datatables.net/responsive/2.2.3/js/dataTables.responsive.js");
+    SPComponentLoader.loadCss("https://cdn.datatables.net/responsive/2.2.3/css/responsive.bootstrap.css");
+
     this.domElement.innerHTML = `<div id="loader"></div>
     <div id="wrapper" class="">
       <!-- Sidebar -->
@@ -219,10 +227,11 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
     <!-- /#page-content-wrapper -->
     </div>`;
 
+    $("#cover").fadeOut(4000);
     $("#menu-toggle").click((e) => {
-      e.preventDefault();
-      $("#wrapper").toggleClass("toggled");
-  });
+        e.preventDefault();
+        $("#wrapper").toggleClass("toggled");
+    });
     
     this._getAccessToken();
     this._getTypeOfAssetList();
@@ -231,6 +240,7 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
     this.AddEventListeners();
     this._navigateToAddAssetForm();
     this._getAssetsAsync();
+    this._loader();
     NavUtils.collapse();
     NavUtils.navTriggers();
     // NavUtils.cover();
@@ -250,7 +260,7 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
 
   private _loader() {
     let html: string = "";
-    html += `<div id="cover"> <span class="glyphicon glyphicon-refresh w3-spin preloader-Icon"></span> loading...</div>`;
+    html += `<div id="cover"> <span class="fa-solid fa-rotate"></span> loading...</div>`;
 
     const listContainer: Element = this.domElement.querySelector('#loader');
     listContainer.innerHTML = html;
@@ -288,14 +298,14 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
   private _getTypeOfAssetList() {
     try {
       this.context.spHttpClient.get(`${this.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('${commonConfig.List.TypeOfAssetList}')/items`, SPHttpClient.configurations.v1)
-      .then(response => {
-        return response.json()
-          .then(async (items: any): Promise<void> => {
-            this.ListOfAssets = items.value;
+        .then(response => {
+          return response.json()
+            .then(async (items: any): Promise<void> => {
+              this.ListOfAssets = items.value;
 
-            await this._displayTypeOfAssetList();
-          });
-      });
+              await this._displayTypeOfAssetList();
+            });
+        });
     }
     catch (error) {
       console.log(error);
@@ -383,15 +393,15 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
         selectedLocationArr.forEach((location: string) => {
           locationValue += location + ";";
         });
-  
+
         locationValue = locationValue.slice(0, -1);
       }
-      
+
       if (selectedOfficeArr.length > 0) {
         selectedOfficeArr.forEach((office: string) => {
           officeValue += office + ";";
         });
-  
+
         officeValue = officeValue.slice(0, -1);
       }
 
@@ -422,7 +432,7 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
     if (this.assetByFilterList.length > 0) {
       var table = $('#tbl_asset_list').DataTable();
 
-      if (table.data().any() ) {
+      if (table.data().any()) {
         table.clear().draw();
         table.destroy();
       }
@@ -454,7 +464,7 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
 
       $('.location').change(async () => {
         var elementId: string = $(event.currentTarget).attr("id");
-        var element = <HTMLInputElement> document.getElementById(`${elementId}`);
+        var element = <HTMLInputElement>document.getElementById(`${elementId}`);
         if (element.checked) {
           selectedLocationArr.push(elementId);
         }
@@ -510,7 +520,7 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
 
       $('.office').change(async () => {
         var elementId: string = $(event.currentTarget).attr("id");
-        var element = <HTMLInputElement> document.getElementById(`${elementId}`);
+        var element = <HTMLInputElement>document.getElementById(`${elementId}`);
         if (element.checked) {
           selectedOfficeArr.push(elementId);
         }
@@ -553,7 +563,7 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
       });
     });
 
-    filteredOfficeName = filteredOfficeName.filter((element,index,self) => {
+    filteredOfficeName = filteredOfficeName.filter((element, index, self) => {
       return index === self.indexOf(element);
     });
 
@@ -588,8 +598,8 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
         });
       });
     }
-    
-    filteredTypeOfAsset = filteredTypeOfAsset.filter((element,index,self) => {
+
+    filteredTypeOfAsset = filteredTypeOfAsset.filter((element, index, self) => {
       return index === self.indexOf(element);
     });
 
@@ -603,8 +613,8 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
         grant_type: 'password',
         client_id: 'myClientId',
         client_secret: 'myClientSecret',
-        username: "roukaiyan@frci.net",
-        password: "Pa$$w0rd"
+        username: "admin2@lincolnrealty.mu",
+        password: "Pa$$w0rd1"
       };
 
       return $.ajax({
@@ -630,7 +640,7 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
         grant_type: 'password',
         client_id: 'myClientId',
         client_secret: 'myClientSecret',
-        username: "roukaiyan@frci.net",
+        username: "admin2@lincolnrealty.mu",
         password: "Pa$$w0rd1"
       };
 
@@ -782,21 +792,21 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
       });
 
       //Click view btn
-      $('#tbl_asset_list').on('click', '.view', function() {
+      $('#tbl_asset_list').on('click', '.view', function () {
         var data = table.row($(this).parents('tr')).data();
         var refNo = data[1];
-        var url = new URL(`https://frcidevtest.sharepoint.com/sites/Lincoln/SitePages/${commonConfig.Page.AddAssets}`);
-        url.searchParams.append('refNo',refNo);
+        var url = new URL(`https://lincolnrealtymu.sharepoint.com/sites/Lincoln/SitePages/${commonConfig.Page.AddAssets}`);
+        url.searchParams.append('refNo', refNo);
         Navigation.navigate(url.toString(), true);
       });
 
       //Click delete btn
-      $('#tbl_asset_list').on('click', '.delete', function() {
+      $('#tbl_asset_list').on('click', '.delete', function () {
         if (confirm("Are you sure you want to delete this asset?")) {
           var data = table.row($(this).parents('tr')).data();
           $.ajax({
             type: 'DELETE',
-            data: {'action': 'delete'},
+            data: { 'action': 'delete' },
             url: commonConfig.baseUrl + '/api/Asset/delete/' + data[1],
             headers: {
               Authorization: 'Bearer ' + AddAssetsDashboardWebPart.accessToken
@@ -804,7 +814,7 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
             dataType: 'json',
             contentType: 'application/json',
             success: (result) => {
-              var url = new URL("https://frcidevtest.sharepoint.com/sites/Lincoln/SitePages/Asset-Mngt-Dashboard.aspx");
+              var url = new URL("https://lincolnrealtymu.sharepoint.com/sites/Lincoln/SitePages/Asset-Mngt-Dashboard.aspx");
               Navigation.navigate(url.toString(), true);
               return result;
             },

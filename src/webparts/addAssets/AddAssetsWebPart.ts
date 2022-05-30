@@ -492,7 +492,7 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
   }
 
   private _cancel(): void {
-    var url = new URL("https://frcidevtest.sharepoint.com/sites/Lincoln/SitePages/Asset-Mngt-Dashboard.aspx");
+    var url = new URL("https://lincolnrealtymu.sharepoint.com/sites/Lincoln/SitePages/Asset-Mngt-Dashboard.aspx");
     Navigation.navigate(url.toString(), true);
   }
 
@@ -501,8 +501,8 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
       grant_type: 'password',
       client_id: 'myClientId',
       client_secret: 'myClientSecret',
-      username: "roukaiyan@frci.net",
-      password: "Pa$$w0rd"
+      username: "admin2@lincolnrealty.mu",
+      password: "Pa$$w0rd1"
     };
 
     $.ajax({
@@ -670,7 +670,7 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
         data: JSON.stringify(this.dynamicField),
         contentType: 'application/json',
         success: (result) => {
-          var url = new URL(`https://frcidevtest.sharepoint.com/sites/Lincoln/SitePages/${commonConfig.Page.AssetList}`);
+          var url = new URL(`https://lincolnrealtymu.sharepoint.com/sites/Lincoln/SitePages/${commonConfig.Page.AssetList}`);
           alert("Asset saved.");
           Navigation.navigate(url.toString(), true);
           return result;
