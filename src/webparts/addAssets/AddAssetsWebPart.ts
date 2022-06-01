@@ -116,6 +116,7 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
   private floorNoFiltered: any = [];
   private ListOfOffices: IOffices[];
   private ListOfBuildings: IBuildings[];
+  private ListOfBuildingsFiltered: IBuildings[];
   private ListOfOfficeFiltered: IOffices[];
   public fileGUID: Guid;
   private mainFileByteArray = [];
@@ -168,18 +169,16 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
                           <h7>Office</h7>
                         </div>
                         <div class="input-group">
-                          <input list="idOffice" id="myListOffice" name="myBrowserOffice" autocomplete="off"/>
-                          <datalist id="idOffice">
-                          </datalist>
+                          <select name="office" id="idOffice" required>
+                          </select>
                         </div>
                       </div>
                       <div class="col-md-6">
                         <div>
                           <h7>Floor</h7>
                         </div>
-                          <input list="idFloor" id="myListFloor" name="myBrowserFloor" autocomplete="off"/>
-                          <datalist id="idFloor">
-                          </datalist>
+                          <select name="Floor" id="idFloor" required>
+                          </select>
                       </div>
                     </div>
                     <div class="form-row">
@@ -188,9 +187,8 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
                           <h7>Building Name</h7>
                         </div>
                         <div class="input-group">
-                          <input list="idBuildingName" id="myListBuilding" name="myBrowserBuilding" autocomplete="off"/>
-                          <datalist id="idBuildingName">
-                          </datalist>
+                          <select name="BuildingName" id="idBuildingName" required>
+                          </select>
                         </div>
                       </div>
                       <div class="col-md-6">
@@ -319,9 +317,9 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
     document.getElementById('servicingRequired').addEventListener('change', () => this._checkIfServicingRequiredChecked());
     document.getElementById('servicingNotRequired').addEventListener('change', () => this._checkIfServicingNotRequiredChecked());
     document.getElementById('typeOfAssetList').addEventListener('change', () => this._renderFieldRequiredList(this.arrFieldsRequired));
-    document.getElementById('myListOffice').addEventListener('change', () => this._getFloorNo());
-    document.getElementById('myListFloor').addEventListener('change', () => this._populateBuildingsList(this.ListOfBuildings));
-    document.getElementById('myListBuilding').addEventListener('change', () => this._populateLocation());
+    document.getElementById('idOffice').addEventListener('change', () => this._getFloorNo());
+    document.getElementById('idFloor').addEventListener('change', () => this._populateBuildingsList(this.ListOfBuildings));
+    document.getElementById('idBuildingName').addEventListener('change', () => this._populateLocation());
   }
 
   //#region Type of Asset List
@@ -535,6 +533,8 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
                 mapObj.Title).indexOf(obj.Title) == pos;
             });
 
+            html += '<option value="">Choose Office</option>';
+
             this.ListOfOfficeFiltered.forEach((item: IOffices) => {
               html += `
               <option value="${item.Title}">${item.Title}</option>`;
@@ -548,16 +548,18 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
 
   private _getFloorNo(): void {
     let html: string = '';
-    var idOfficeValue = (<HTMLInputElement>document.getElementById('myListOffice')).value;
+    var idOfficeValue = (<HTMLInputElement>document.getElementById('idOffice')).value;
 
-    $('#myListFloor').val("");
-    $('#myListBuilding').val("");
+    $('#idFloor').val("");
+    $('#idBuildingName').val("");
     $('#idBuildingLocation').val("");
 
     this.floorNoFiltered = this.ListOfOffices.filter((obj, pos, arr) => {
       return arr.map(mapObj =>
         mapObj.FloorNumber).indexOf(obj.FloorNumber) == pos;
     });
+
+    html += '<option value="">Choose Floor</option>';
 
     this.ListOfOffices.forEach((item: IOffices) => {
       if (idOfficeValue == item.Title) {
@@ -582,11 +584,13 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
 
   private _populateBuildingsList(buildingsList: IBuildings[]) {
     let html: string = '';
-    var idOfficeValue = (<HTMLInputElement>document.getElementById('myListOffice')).value;
-    var idFloorValue = (<HTMLInputElement>document.getElementById('myListFloor')).value;
+    var idOfficeValue = (<HTMLInputElement>document.getElementById('idOffice')).value;
+    var idFloorValue = (<HTMLInputElement>document.getElementById('idFloor')).value;
 
-    $('#myListBuilding').val("");
+    $('#idBuildingName').val("");
     $('#idBuildingLocation').val("");
+
+    html += '<option value="">Choose Building</option>';
 
     this.ListOfOffices.forEach((itemOffice: IOffices) => {
       if (idOfficeValue == itemOffice.Title && idFloorValue == itemOffice.FloorNumber.toString()) {
@@ -603,9 +607,14 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
   }
 
   private _populateLocation() {
-    var idBuildingValue = (<HTMLInputElement>document.getElementById('myListBuilding')).value;
+    var idBuildingValue = (<HTMLInputElement>document.getElementById('idBuildingName')).value;
 
     $('#idBuildingLocation').val("");
+
+    this.ListOfBuildingsFiltered = this.ListOfBuildings.filter((obj, pos, arr) => {
+      return arr.map(mapObj =>
+        mapObj.Location).indexOf(obj.Location) == pos;
+    });
 
     this.ListOfBuildings.forEach((item: IBuildings) => {
       if (idBuildingValue == item.Title) {
@@ -617,9 +626,9 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
   }
 
   private _getLastSequenceAssetRefNo(token: string) {
-    var idBuildingValue = (<HTMLInputElement>document.getElementById('myListBuilding')).value;
-    var idOfficeValue = (<HTMLInputElement>document.getElementById('myListOffice')).value;
-    var idFloorValue = (<HTMLInputElement>document.getElementById('myListFloor')).value;
+    var idBuildingValue = (<HTMLInputElement>document.getElementById('idBuildingName')).value;
+    var idOfficeValue = (<HTMLInputElement>document.getElementById('idOffice')).value;
+    var idFloorValue = (<HTMLInputElement>document.getElementById('idFloor')).value;
 
     $.ajax({
       type: 'GET',
@@ -637,9 +646,9 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
   }
 
   private _populateAssetRefNo(sequenceNum: number) {
-    var buildingNameValue = (<HTMLInputElement>document.getElementById('myListBuilding')).value;
-    var floorNoValue = (<HTMLInputElement>document.getElementById('myListFloor')).value;
-    var idOfficeValue = (<HTMLInputElement>document.getElementById('myListOffice')).value;
+    var buildingNameValue = (<HTMLInputElement>document.getElementById('idBuildingName')).value;
+    var floorNoValue = (<HTMLInputElement>document.getElementById('idFloor')).value;
+    var idOfficeValue = (<HTMLInputElement>document.getElementById('idOffice')).value;
 
     var nextSequenceNumber: number = +sequenceNum;
     var strNextSequenceNumber: string = nextSequenceNumber.toString();
@@ -726,14 +735,19 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
   }
 
   private _populateFormById(formDetailsList: IDynamicField) {
+    let htmlOffice = "";
+    let htmlFloor = "";
+    let htmlBuilding = "";
+
     try {
       if (this._checkURLParameter()) {
         $("#btnSubmit").html("Update");
 
+        console.log("formDetailsList");
+        console.log(formDetailsList);
+
         $('#idAssetName').val(formDetailsList.Name);
         $('#idAssetRefNo').val(formDetailsList.ReferenceNumber);
-        $('#myListFloor').val(formDetailsList.FloorNo);
-        $('#myListBuilding').val(formDetailsList.BuildingName);
         $('#idOwnership').val(formDetailsList.Ownership);
         $('#typeOfAssetList').val(formDetailsList.TypeOfAsset);
         $('#idServicingPeriod').val(formDetailsList.ServicingPeriod);
@@ -742,18 +756,14 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
         this.ListOfBuildings.forEach((item: IBuildings) => {
           if (formDetailsList.BuildingName == item.Title) {
             $('#idBuildingLocation').val(item.Location);
-
-            this.ListOfOffices.forEach((officeItem: IOffices) => {
-              if (officeItem.FloorNumber != null) {
-                if (officeItem.BuildingIDId == item.ID && formDetailsList.FloorNo == officeItem.FloorNumber.toString()) {
-                  $('#myListOffice').val(officeItem.Title);
-                }
-              }
-            });
           }
         });
 
         this._renderFieldRequiredList(this.arrFieldsRequired);
+
+        htmlOffice += `<option value="${formDetailsList.OfficeName}" selected>${formDetailsList.OfficeName}</option>`;
+        htmlFloor += `<option value="${formDetailsList.FloorNo}" selected>${formDetailsList.FloorNo}</option>`;
+        htmlBuilding += `<option value="${formDetailsList.BuildingName}" selected>${formDetailsList.BuildingName}</option>`;
 
         this.arrFieldsRequired.forEach((item: IFieldsRequiredList) => {
           if (item.TypeOfAssets.Title == formDetailsList.TypeOfAsset) {
@@ -801,15 +811,24 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
           this._populateAttachmentTable();
         }
 
+        const listContainer1: Element = this.domElement.querySelector('#idOffice');
+        listContainer1.innerHTML = htmlOffice;
+
+        const listContainer2: Element = this.domElement.querySelector('#idFloor');
+        listContainer2.innerHTML = htmlFloor;
+
+        const listContainer3: Element = this.domElement.querySelector('#idBuildingName');
+        listContainer3.innerHTML = htmlBuilding;
+
         //Disable all fields on view
         $('#idAssetName').prop('disabled', true);
         $('#idAssetRefNo').prop('disabled', true);
-        $('#myListFloor').prop('disabled', true);
-        $('#myListBuilding').prop('disabled', true);
+        $('#idFloor').prop('disabled', true);
+        $('#idBuildingName').prop('disabled', true);
         $('#idOwnership').prop('disabled', true);
         $('#typeOfAssetList').prop('disabled', true);
         $('#idBuildingLocation').prop('disabled', true);
-        $('#myListOffice').prop('disabled', true);
+        $('#idOffice').prop('disabled', true);
       }
     }
     catch (error) {
@@ -862,10 +881,10 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
       this.dynamicField = {
         Name: (<HTMLInputElement>document.getElementById('idAssetName')).value,
         ReferenceNumber: (<HTMLInputElement>document.getElementById('idAssetRefNo')).value,
-        BuildingName: (<HTMLInputElement>document.getElementById('myListBuilding')).value,
-        OfficeName: (<HTMLInputElement>document.getElementById('myListOffice')).value,
+        BuildingName: (<HTMLInputElement>document.getElementById('idBuildingName')).value,
+        OfficeName: (<HTMLInputElement>document.getElementById('idOffice')).value,
         BuildingLocation: (<HTMLInputElement>document.getElementById('idBuildingLocation')).value,
-        FloorNo: (<HTMLInputElement>document.getElementById('myListFloor')).value,
+        FloorNo: (<HTMLInputElement>document.getElementById('idFloor')).value,
         Ownership: (<HTMLInputElement>document.getElementById('idOwnership')).value,
         TypeOfAsset: (<HTMLInputElement>document.getElementById('typeOfAssetList')).value,
         LastServicingDate: (<HTMLInputElement>document.getElementById('idLastServicingDate')).value,

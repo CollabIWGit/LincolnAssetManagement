@@ -3,7 +3,6 @@ import { IPropertyPaneConfiguration, PropertyPaneTextField } from '@microsoft/sp
 import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
 import { escape } from '@microsoft/sp-lodash-subset';
 import { Navigation } from 'spfx-navigation';
-import styles from './LincolnHomeWebPart.module.scss';
 import * as strings from 'LincolnHomeWebPartStrings';
 import * as $ from "jquery";
 

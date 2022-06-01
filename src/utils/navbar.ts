@@ -10,25 +10,6 @@ export class navbar {
                     <span class="fa fa-home mr-3"> </span>Home
                 </a>
             </li>
-            <li id="userMgtComponent">
-                <a id="UserMgt">
-                    <span class="fa fa-user mr-3"> </span>User Management
-                </a>
-                <div class="collapse3 collapse">
-                    <ul style="list-style-type:none;" id="caseManagementUl">
-                        <li>
-                            <a id="usersList">
-                                <span class="fa fa-list"> </span> List of Users
-                            </a>
-                        </li>
-                        <li>
-                            <a id="addUser">
-                                <span class="fa fa-plus"> </span> Add new User
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </li>
             <li>
                 <a id="CaseMgt">
                     <span class="fas fa-file-contract mr-3"> </span>Case Management
@@ -62,6 +43,25 @@ export class navbar {
                         <li>
                             <a id="addAsset">
                                 <span class="fa fa-plus"> </span> Add new Asset
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </li>
+            <li id="userMgtComponent">
+                <a id="UserMgt">
+                    <span class="fa fa-user mr-3"> </span>User Management
+                </a>
+                <div class="collapse3 collapse">
+                    <ul style="list-style-type:none;" id="caseManagementUl">
+                        <li>
+                            <a id="usersList">
+                                <span class="fa fa-list"> </span> List of Users
+                            </a>
+                        </li>
+                        <li>
+                            <a id="addUser">
+                                <span class="fa fa-plus"> </span> Add new User
                             </a>
                         </li>
                     </ul>

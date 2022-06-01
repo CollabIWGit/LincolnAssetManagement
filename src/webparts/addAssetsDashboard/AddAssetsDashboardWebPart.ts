@@ -114,6 +114,7 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
   private ListOfBuildings: IBuildings[];
   private ListOfOffices: IOffices[];
   private ListOfOfficeFiltered: IOffices[];
+  private ListOfBuildingsFiltered: IBuildings[];
 
   public render(): void {
     SPComponentLoader.loadCss("https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css");
@@ -371,6 +372,11 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
             .then((items: any): void => {
               this.ListOfBuildings = items.value;
 
+              this.ListOfBuildingsFiltered = this.ListOfBuildings.filter((obj, pos, arr) => {
+                return arr.map(mapObj =>
+                  mapObj.Location).indexOf(obj.Location) == pos;
+              });
+
               this._locationFilters();
             });
         });
@@ -449,7 +455,7 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
     try {
       let html: string = "";
 
-      this.ListOfBuildings.forEach((item: IBuildings) => {
+      this.ListOfBuildingsFiltered.forEach((item: IBuildings) => {
         html += `
         <div class="input-field">
           <div class="custom-control custom-checkbox">

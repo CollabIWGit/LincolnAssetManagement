@@ -126,3 +126,9 @@ select:focus, select:active {
 hr.lineBreak {
   border-top: 1px solid rgb(252, 252, 252);
 }
+
+.dataTables_wrapper .dataTables_length select {
+  border: 1px solid #aaa;
+  border-radius: 3px;
+  padding: 4px;
+  }
