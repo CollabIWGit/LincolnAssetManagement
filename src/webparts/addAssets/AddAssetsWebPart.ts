@@ -138,7 +138,7 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
               <nav class="navbar navbar-expand-lg navbar-dark bg-dark" id="navnavr">
                 <div class="container-fluid">
                   <div class="col-lg-12" id="title">
-                    <h3>Add New Asset Form</h3>
+                    <h3 id="header_title">Asset Form</h3>
                   </div>
                 </div>
               </nav>
@@ -701,7 +701,7 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
     var myParm = queryParms.get("refNo");
     if (myParm) {
       var refNo = myParm.trim();
-
+      $("#header_title").html(`Update Asset Form`);
       $.ajax({
         type: 'GET',
         url: commonConfig.baseUrl + `/api/Asset/GetAssetByRefNo?refNo=${refNo}`,
@@ -716,6 +716,9 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
           return result;
         }
       });
+    }
+    else {
+      $("#header_title").html(`Add New Asset Form`);
     }
   }
 
