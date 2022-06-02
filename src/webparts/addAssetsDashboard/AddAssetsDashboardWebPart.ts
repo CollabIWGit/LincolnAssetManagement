@@ -116,6 +116,11 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
   private ListOfOfficeFiltered: IOffices[];
   private ListOfBuildingsFiltered: IBuildings[];
 
+  private LocationsFilterFromLocalStorage = [];
+  private OfficesFilterFromLocalStorage = [];
+  private TypeOfAssetFilterFromLocalStorage = "";
+  private AssetRefNoFilterFromLocalStorage = "";
+
   public render(): void {
     SPComponentLoader.loadCss("https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css");
     SPComponentLoader.loadScript("https://code.jquery.com/jquery-3.5.1.js");
@@ -230,10 +235,10 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
 
     $("#cover").fadeOut(4000);
     $("#menu-toggle").click((e) => {
-        e.preventDefault();
-        $("#wrapper").toggleClass("toggled");
+      e.preventDefault();
+      $("#wrapper").toggleClass("toggled");
     });
-    
+
     this._getAccessToken();
     this._getTypeOfAssetList();
     this._getLocationList();
@@ -245,6 +250,8 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
     NavUtils.collapse();
     NavUtils.navTriggers();
     // NavUtils.cover();
+
+    this._getFiltersFromLocalStorage();
   }
 
   private AddEventListeners(): any {
@@ -395,6 +402,22 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
       var locationValue = "";
       var officeValue = "";
 
+      selectedLocationArr = [];
+      selectedOfficeArr = [];
+
+      $('#locationFilters input:checked').each(function () {
+        selectedLocationArr.push($(this).attr('name'));
+      });
+  
+      $('#officeFilters input:checked').each(function () {
+        selectedOfficeArr.push($(this).attr('name'));
+      });
+
+      console.log(assetRefNoValue);
+      console.log(typeOfAssetValue);
+      console.log(selectedLocationArr);
+      console.log(selectedOfficeArr);
+
       if (selectedLocationArr.length > 0) {
         selectedLocationArr.forEach((location: string) => {
           locationValue += location + ";";
@@ -434,6 +457,8 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
   }
 
   private async _displayAssets() {
+    this._saveAssetFiltersInLocalStorage();
+
     await this._getAssetsByFilters(this.accessTokenValue);
     if (this.assetByFilterList.length > 0) {
       var table = $('#tbl_asset_list').DataTable();
@@ -459,7 +484,7 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
         html += `
         <div class="input-field">
           <div class="custom-control custom-checkbox">
-            <input type="checkbox" class="custom-control-input location" id="${item.Location}" name="${item.Location}" value="${item.Location}">
+            <input type="checkbox" class="custom-control-input location" id="${item.Location}" name="${item.Location}" value="${item.Location}" ${this.LocationsFilterFromLocalStorage.includes(item.Location) ? "checked" : ""}>
             <label for="${item.Location}" class="custom-control-label"> ${item.Location}</label><br>
           </div>
         </div>`;
@@ -503,7 +528,7 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
           html += `
           <div class="input-field">
             <div class="custom-control custom-checkbox">
-              <input type="checkbox" class="custom-control-input office" id="${officeName}" name="${officeName}" value="${officeName}">
+              <input type="checkbox" class="custom-control-input office" id="${officeName}" name="${officeName}" value="${officeName}" ${this.OfficesFilterFromLocalStorage.includes(officeName) ? "checked" : ""}>
               <label for="${officeName}" class="custom-control-label"> ${officeName}</label><br>
             </div>
           </div>`;
@@ -514,7 +539,7 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
           html += `
           <div class="input-field">
             <div class="custom-control custom-checkbox">
-              <input type="checkbox" class="custom-control-input office" id="${item.Title}" name="${item.Title}" value="${item.Title}">
+              <input type="checkbox" class="custom-control-input office" id="${item.Title}" name="${item.Title}" value="${item.Title}" ${this.OfficesFilterFromLocalStorage.includes(item.Title) ? "checked" : ""}>
               <label for="${item.Title}" class="custom-control-label"> ${item.Title}</label><br>
             </div>
           </div>`;
@@ -837,6 +862,64 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
     catch (error) {
       console.log(error);
       return error;
+    }
+  }
+
+  private _saveAssetFiltersInLocalStorage() {
+    var selectedLocationsFilters = [];
+    var selectedOfficesFilters = [];
+
+    $('#locationFilters input:checked').each(function () {
+      selectedLocationsFilters.push($(this).attr('name'));
+    });
+
+    $('#officeFilters input:checked').each(function () {
+      selectedOfficesFilters.push($(this).attr('name'));
+    });
+
+    var assetRefNoValue = (<HTMLInputElement>document.getElementById('myListAssetReferenceNo')).value;
+    var typeOfAssetValue = (<HTMLInputElement>document.getElementById('myListTypeOfAsset')).value;
+    var filters = '';
+
+    filters += "Locations=";
+    if (selectedLocationsFilters.length > 0) {
+      filters += selectedLocationsFilters.join(',');
+    }
+    filters += "&";
+
+    filters += "Offices=";
+    if (selectedOfficesFilters.length > 0) {
+      filters += selectedOfficesFilters.join(',');
+    }
+    filters += "&";
+
+    filters += `RefNo=${assetRefNoValue}&`;
+
+    filters += `TypeOfAsset=${typeOfAssetValue}`;
+
+    localStorage.setItem('filter', filters);
+  }
+
+  private _getFiltersFromLocalStorage() {
+    var allFilters = localStorage.getItem('filter');
+    if (allFilters != null) {
+
+      var splitedFilters = allFilters.split('&');
+      var locationFilter = splitedFilters[0].split('=')[1].split(','); //array of locations
+      var officeFilter = splitedFilters[1].split('=')[1].split(','); //array of offices
+      var refNoFilter = splitedFilters[2].split('=')[1];
+      var typeOfAssetFilter = splitedFilters[3].split('=')[1];
+
+      this.LocationsFilterFromLocalStorage = locationFilter;
+      this.OfficesFilterFromLocalStorage = officeFilter;
+      this.AssetRefNoFilterFromLocalStorage = refNoFilter;
+      this.TypeOfAssetFilterFromLocalStorage = typeOfAssetFilter;
+
+      if (this.AssetRefNoFilterFromLocalStorage != '')
+        $('#myListAssetReferenceNo').val(this.AssetRefNoFilterFromLocalStorage);
+
+      if (this.TypeOfAssetFilterFromLocalStorage != '')
+        $('#myListTypeOfAsset').val(this.TypeOfAssetFilterFromLocalStorage);
     }
   }
 
