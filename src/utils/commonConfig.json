@@ -14,5 +14,6 @@
         "OfficeList" : "Offices",
         "BuildingList" : "Buildings"
     },
-    "baseUrl" : "https://api-lincoln.azurewebsites.net"
+    "baseUrl" : "https://7125-102-113-232-128.ngrok.io",
+    "url" : "https://frcidevtest.sharepoint.com/sites/Lincoln"
 }

@@ -25,6 +25,7 @@ require('../../styles/test.css');
 import * as commonConfig from "../../utils/commonConfig.json";
 
 var selectedLocationArr: any = [];
+var selectedBuildingArr: any = [];
 var selectedOfficeArr: any = [];
 var filteredOfficeName: any = [];
 var filteredTypeOfAsset: any = [];
@@ -117,6 +118,7 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
   private ListOfBuildingsFiltered: IBuildings[];
 
   private LocationsFilterFromLocalStorage = [];
+  private BuildingsFilterFromLocalStorage = [];
   private OfficesFilterFromLocalStorage = [];
   private TypeOfAssetFilterFromLocalStorage = "";
   private AssetRefNoFilterFromLocalStorage = "";
@@ -154,7 +156,7 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
                   <div id="content3">
                     <div class="filters">
                       <div class="form-row">
-                        <div class="col-md-6">
+                        <div class="col-md-6" style="display:none;">
                           <div id="locationFilter">
                             <div>
                               <h7>Location</h7>
@@ -165,6 +167,25 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
                                   <div class="inner-form">
                                     <div class="advance-search">
                                       <div class="form-row" id="locationFilters">
+                                      </div>
+                                    </div>
+                                  </div>
+                                </form>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="col-md-6">
+                          <div id="buildingFilter">
+                            <div>
+                              <h7>Building</h7>
+                            </div>
+                            <div class="card" id="card">
+                              <div class="card-body" id="card">
+                                <form>
+                                  <div class="inner-form">
+                                    <div class="advance-search">
+                                      <div class="form-row" id="buildingFilters">
                                       </div>
                                     </div>
                                   </div>
@@ -241,7 +262,7 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
 
     this._getAccessToken();
     this._getTypeOfAssetList();
-    this._getLocationList();
+    this._getBuildingAndLocationList();
     this._getAllOffices();
     this.AddEventListeners();
     this._navigateToAddAssetForm();
@@ -370,7 +391,7 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
     }
   }
 
-  private _getLocationList() {
+  private _getBuildingAndLocationList() {
     try {
       let html: string = '';
       this.context.spHttpClient.get(`${this.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('${commonConfig.List.BuildingList}')/items`, SPHttpClient.configurations.v1)
@@ -384,7 +405,8 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
                   mapObj.Location).indexOf(obj.Location) == pos;
               });
 
-              this._locationFilters();
+              // this._locationFilters();
+              this._buildingFilters();
             });
         });
     }
@@ -400,13 +422,19 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
       var typeOfAssetValue = (<HTMLInputElement>document.getElementById('myListTypeOfAsset')).value;
       var assetNameValue = "";
       var locationValue = "";
+      var buildingValue = "";
       var officeValue = "";
 
       selectedLocationArr = [];
+      selectedBuildingArr = [];
       selectedOfficeArr = [];
 
       $('#locationFilters input:checked').each(function () {
         selectedLocationArr.push($(this).attr('name'));
+      });
+
+      $('#buildingFilters input:checked').each(function () {
+        selectedBuildingArr.push($(this).attr('name'));
       });
   
       $('#officeFilters input:checked').each(function () {
@@ -416,6 +444,7 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
       console.log(assetRefNoValue);
       console.log(typeOfAssetValue);
       console.log(selectedLocationArr);
+      console.log(selectedBuildingArr);
       console.log(selectedOfficeArr);
 
       if (selectedLocationArr.length > 0) {
@@ -424,6 +453,14 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
         });
 
         locationValue = locationValue.slice(0, -1);
+      }
+
+      if (selectedBuildingArr.length > 0) {
+        selectedBuildingArr.forEach((building: string) => {
+          buildingValue += building + ";";
+        });
+
+        buildingValue = buildingValue.slice(0, -1);
       }
 
       if (selectedOfficeArr.length > 0) {
@@ -436,7 +473,7 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
 
       await $.ajax({
         type: 'GET',
-        url: commonConfig.baseUrl + `/api/Asset/GetAssetsByFilters?refNo=${assetRefNoValue}&assetName=${assetNameValue}&typeOfAsset=${typeOfAssetValue}&location=${locationValue}&office=${officeValue}`,
+        url: commonConfig.baseUrl + `/api/Asset/GetAssetsByFilters?refNo=${assetRefNoValue}&assetName=${assetNameValue}&typeOfAsset=${typeOfAssetValue}&location=${locationValue}&office=${officeValue}&buildingName=${buildingValue}`,
         headers: {
           Authorization: 'Bearer ' + token
         },
@@ -518,12 +555,54 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
     }
   }
 
+  private _buildingFilters() {
+    try {
+      let html: string = "";
+
+      this.ListOfBuildings.forEach((item: IBuildings) => {
+        html += `
+        <div class="input-field">
+          <div class="custom-control custom-checkbox">
+            <input type="checkbox" class="custom-control-input building" id="${item.Title}" name="${item.Title}" value="${item.Title}" ${this.BuildingsFilterFromLocalStorage.includes(item.Title) ? "checked" : ""}>
+            <label for="${item.Title}" class="custom-control-label"> ${item.Title}</label><br>
+          </div>
+        </div>`;
+      });
+
+      const listContainer: Element = this.domElement.querySelector('#buildingFilters');
+      listContainer.innerHTML = html;
+
+      $('.building').change(async () => {
+        var elementId: string = $(event.currentTarget).attr("id");
+        var element = <HTMLInputElement>document.getElementById(`${elementId}`);
+        if (element.checked) {
+          selectedBuildingArr.push(elementId);
+        }
+        else {
+          selectedBuildingArr.forEach(async (item, index) => {
+            if (item == elementId) {
+              selectedBuildingArr.splice(index, 1);
+            }
+          });
+        }
+
+        // if (selectedBuildingArr.length > 0) {
+        await this._filterOfficesListOnBuildingChange();
+        // }
+      });
+    }
+    catch (error) {
+      console.log(error);
+      return error;
+    }
+  }
+
   private _officeFilters() {
     try {
       let html: string = "";
       selectedOfficeArr = [];
 
-      if (selectedLocationArr.length > 0) {
+      if (selectedLocationArr.length > 0 || selectedBuildingArr.length > 0) {
         filteredOfficeName.forEach((officeName: string) => {
           html += `
           <div class="input-field">
@@ -601,14 +680,71 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
     this._officeFilters();
   }
 
+  private _filterOfficesListOnBuildingChange() {
+    filteredOfficeName = [];
+    filteredTypeOfAsset = [];
+    filteredAssetRefNo = [];
+
+    if(selectedBuildingArr.length > 0) {
+      selectedBuildingArr.forEach((buildingName: string) => {
+        this.ListOfBuildings.forEach((building: IBuildings) => {
+          if (building.Title == buildingName) {
+            this.ListOfOffices.forEach((office: IOffices) => {
+              if (building.ID == office.BuildingIDId) {
+                filteredOfficeName.push(office.Title);
+              }
+            });
+          }
+        });
+      });
+    }
+    else {
+      this.ListOfOffices.forEach((office: IOffices) => {
+        filteredOfficeName.push(office.Title);
+      });
+    }
+
+    //Check if buildings checked in local storage
+    if (this.BuildingsFilterFromLocalStorage.length > 0) {
+      this._filterOfficeWithBuildingsLocalStorage();
+    }
+
+    filteredOfficeName = filteredOfficeName.filter((element, index, self) => {
+      return index === self.indexOf(element);
+    });
+
+    this._officeFilters();
+  }
+
+  private _filterOfficeWithBuildingsLocalStorage() {
+    try {
+      this.BuildingsFilterFromLocalStorage.forEach((buildingName: string) => {
+        this.ListOfBuildings.forEach((building: IBuildings) => {
+          if (building.Title == buildingName) {
+            this.ListOfOffices.forEach((office: IOffices) => {
+              if (building.ID == office.BuildingIDId) {
+                filteredOfficeName.push(office.Title);
+              }
+            });
+          }
+        });
+      });
+    }
+    catch (error) {
+      console.log(error);
+      return error;
+    }
+  }
+
   private _filterAssetsOnOfficeChange() {
     filteredTypeOfAsset = [];
     filteredAssetRefNo = [];
 
-    if (selectedLocationArr.length > 0) {
-      selectedLocationArr.forEach((location: string) => {
+    //If building options have been selected
+    if (selectedBuildingArr.length > 0) {
+      selectedBuildingArr.forEach((building: string) => {
         this.assetList.forEach((asset: IDynamicField) => {
-          if (asset.BuildingLocation == location) {
+          if (asset.BuildingName == building) {
             selectedOfficeArr.forEach((office: string) => {
               if (asset.OfficeName == office) {
                 filteredTypeOfAsset.push(asset.TypeOfAsset);
@@ -619,6 +755,22 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
         });
       });
     }
+
+    //If location options have been selected
+    // if (selectedLocationArr.length > 0) {
+    //   selectedLocationArr.forEach((location: string) => {
+    //     this.assetList.forEach((asset: IDynamicField) => {
+    //       if (asset.BuildingLocation == location) {
+    //         selectedOfficeArr.forEach((office: string) => {
+    //           if (asset.OfficeName == office) {
+    //             filteredTypeOfAsset.push(asset.TypeOfAsset);
+    //             filteredAssetRefNo.push(asset.ReferenceNumber);
+    //           }
+    //         });
+    //       }
+    //     });
+    //   });
+    // }
     else {
       this.assetList.forEach((asset: IDynamicField) => {
         selectedOfficeArr.forEach((office: string) => {
@@ -644,8 +796,8 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
         grant_type: 'password',
         client_id: 'myClientId',
         client_secret: 'myClientSecret',
-        username: "admin2@lincolnrealty.mu",
-        password: "Pa$$w0rd1"
+        username: "roukaiyan@frci.net",
+        password: "Pa$$w0rd"
       };
 
       return $.ajax({
@@ -671,8 +823,8 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
         grant_type: 'password',
         client_id: 'myClientId',
         client_secret: 'myClientSecret',
-        username: "admin2@lincolnrealty.mu",
-        password: "Pa$$w0rd1"
+        username: "roukaiyan@frci.net",
+        password: "Pa$$w0rd"
       };
 
       $.ajax({
@@ -826,7 +978,7 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
       $('#tbl_asset_list').on('click', '.view', function () {
         var data = table.row($(this).parents('tr')).data();
         var refNo = data[1];
-        var url = new URL(`https://lincolnrealtymu.sharepoint.com/sites/Lincoln/SitePages/${commonConfig.Page.AddAssets}`);
+        var url = new URL(`${commonConfig.url}/SitePages/${commonConfig.Page.AddAssets}`);
         url.searchParams.append('refNo', refNo);
         Navigation.navigate(url.toString(), true);
       });
@@ -845,7 +997,7 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
             dataType: 'json',
             contentType: 'application/json',
             success: (result) => {
-              var url = new URL("https://lincolnrealtymu.sharepoint.com/sites/Lincoln/SitePages/Asset-Mngt-Dashboard.aspx");
+              var url = new URL(`${commonConfig.url}/SitePages/${commonConfig.Page.AssetList}`);
               Navigation.navigate(url.toString(), true);
               return result;
             },
@@ -867,10 +1019,15 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
 
   private _saveAssetFiltersInLocalStorage() {
     var selectedLocationsFilters = [];
+    var selectedBuildingsFilters = [];
     var selectedOfficesFilters = [];
 
     $('#locationFilters input:checked').each(function () {
       selectedLocationsFilters.push($(this).attr('name'));
+    });
+
+    $('#buildingFilters input:checked').each(function () {
+      selectedBuildingsFilters.push($(this).attr('name'));
     });
 
     $('#officeFilters input:checked').each(function () {
@@ -884,6 +1041,12 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
     filters += "Locations=";
     if (selectedLocationsFilters.length > 0) {
       filters += selectedLocationsFilters.join(',');
+    }
+    filters += "&";
+
+    filters += "Buildings=";
+    if (selectedBuildingsFilters.length > 0) {
+      filters += selectedBuildingsFilters.join(',');
     }
     filters += "&";
 
@@ -906,11 +1069,13 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
 
       var splitedFilters = allFilters.split('&');
       var locationFilter = splitedFilters[0].split('=')[1].split(','); //array of locations
-      var officeFilter = splitedFilters[1].split('=')[1].split(','); //array of offices
-      var refNoFilter = splitedFilters[2].split('=')[1];
-      var typeOfAssetFilter = splitedFilters[3].split('=')[1];
+      var buildingFilter = splitedFilters[1].split('=')[1].split(','); //array of buildings
+      var officeFilter = splitedFilters[2].split('=')[1].split(','); //array of offices
+      var refNoFilter = splitedFilters[3].split('=')[1];
+      var typeOfAssetFilter = splitedFilters[4].split('=')[1];
 
       this.LocationsFilterFromLocalStorage = locationFilter;
+      this.BuildingsFilterFromLocalStorage = buildingFilter;
       this.OfficesFilterFromLocalStorage = officeFilter;
       this.AssetRefNoFilterFromLocalStorage = refNoFilter;
       this.TypeOfAssetFilterFromLocalStorage = typeOfAssetFilter;

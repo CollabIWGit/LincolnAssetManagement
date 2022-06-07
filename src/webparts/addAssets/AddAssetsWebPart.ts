@@ -166,34 +166,34 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
                     <div class="form-row">
                       <div class="col-md-6">
                         <div>
-                          <h7>Office</h7>
+                          <h7>Office <span class="required" id="requiredOffice">*</span></h7>
                         </div>
                         <div class="input-group">
-                          <select name="office" id="idOffice" required>
+                          <select name="office" id="idOffice">
                           </select>
                         </div>
                       </div>
                       <div class="col-md-6">
                         <div>
-                          <h7>Floor</h7>
+                          <h7>Floor <span class="required" id="requiredFloor">*</span></h7>
                         </div>
-                          <select name="Floor" id="idFloor" required>
+                          <select name="Floor" id="idFloor">
                           </select>
                       </div>
                     </div>
                     <div class="form-row">
                       <div class="col-md-6">
                         <div>
-                          <h7>Building Name</h7>
+                          <h7>Building Name <span class="required" id="requiredBuildingName">*</span></h7>
                         </div>
                         <div class="input-group">
-                          <select name="BuildingName" id="idBuildingName" required>
+                          <select name="BuildingName" id="idBuildingName">
                           </select>
                         </div>
                       </div>
                       <div class="col-md-6">
                         <div>
-                          <h7>Building Location</h7>
+                          <h7>Building Location <span class="required" id="requiredBuildingLocation">*</span></h7>
                         </div>
                         <div class="input-group">
                           <input type="text" id="idBuildingLocation" autocomplete="off"/> 
@@ -208,7 +208,7 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
                     </div>
                     <div class="form-row">
                       <div class="col-md-12">
-                        <h7>Type Of Asset</h7>
+                        <h7>Type Of Asset <span class="required" id="requiredTypeOfAsset">*</span></h7>
                         <div class="input-group">
                           <select id="typeOfAssetList">
                           </select>
@@ -247,6 +247,12 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
                       </div>
                     </div>
                     <div class="form-row">
+                      <div class="popup-overlay col-md-12">
+                        <div class="popup-content" id="popup">
+                        </div>
+                      </div>
+                    </div>
+                    <div class="form-row">
                       <div class="col-md-12 input-group">
                         <h7>Comments</h7>
                         <textarea rows="3" id="idComments" autocomplete="off"></textarea>
@@ -278,11 +284,9 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
                       <div id="testingFile">
                       </div>
                     </div>
+                    
                     <div class="form-row">
-                      <div class="col-xl-8">
-                        <h6></h6>
-                      </div>
-                      <div class="col-xl-3 offset-9">
+                      <div class="col-md-4 offset-8">
                         <button id="btnSubmit" class="btn btn-secondary" type="button">Submit</button>
                         <button id="btnCancel" class="btn btn-secondary" type="button">Cancel</button>
                       </div>
@@ -332,14 +336,14 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
 
   private _renderTypeOfAssetList(items: ITypeOfAssetList[]): void {
     var arr = [];
-    let html: string = `<option selected>Select Type Of Assets</option>`;
+    let html: string = `<option value="">Select Type Of Assets</option>`;
     items.forEach((item: ITypeOfAssetList) => {
       arr.push(item.Title);
       arr.sort();
     });
 
     for (let j = 0; j < arr.length; j++) {
-      html += `<option>${arr[j]}</option>`;
+      html += `<option value="${arr[j]}">${arr[j]}</option>`;
     }
 
     const listContainer: Element = this.domElement.querySelector('#typeOfAssetList');
@@ -480,8 +484,26 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
 
   private async _submit() {
     try {
-      await this._applicationDetails();
-      this._saveAsset(this.accessToken);
+      let html: string = "";
+      var result: boolean = await this._applicationDetails();
+
+      if (result) {
+        this._saveAsset(this.accessToken);
+      }
+      else {
+        html += `
+        <h2>Error</h2>
+        <p>Please fill all required fields.</p>
+        <button class="closePopup">Close</button>`;
+      }
+
+      const listContainer: Element = this.domElement.querySelector('#popup');
+      listContainer.innerHTML = html;
+
+      $(".popup-overlay, .popup-content").addClass("active");
+      $(".closePopup").on("click", () => {
+        $(".popup-overlay, .popup-content").removeClass("active");
+      });
     }
     catch (error) {
       console.log(error);
@@ -490,7 +512,7 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
   }
 
   private _cancel(): void {
-    var url = new URL("https://lincolnrealtymu.sharepoint.com/sites/Lincoln/SitePages/Asset-Mngt-Dashboard.aspx");
+    var url = (`${commonConfig.url}/SitePages/${commonConfig.Page.AssetList}`);
     Navigation.navigate(url.toString(), true);
   }
 
@@ -499,8 +521,8 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
       grant_type: 'password',
       client_id: 'myClientId',
       client_secret: 'myClientSecret',
-      username: "admin2@lincolnrealty.mu",
-      password: "Pa$$w0rd1"
+      username: "roukaiyan@frci.net",
+      password: "Pa$$w0rd"
     };
 
     $.ajax({
@@ -667,8 +689,9 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
   }
   //#endregion
 
-  private _saveAsset(token: string): void {
+  private _saveAsset(token: string) {
     try {
+      let html: string = "";
       $.ajax({
         type: 'POST',
         url: commonConfig.baseUrl + '/api/Asset/SaveAsset',
@@ -679,9 +702,22 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
         data: JSON.stringify(this.dynamicField),
         contentType: 'application/json',
         success: (result) => {
-          var url = new URL(`https://lincolnrealtymu.sharepoint.com/sites/Lincoln/SitePages/${commonConfig.Page.AssetList}`);
-          alert("Asset saved.");
-          Navigation.navigate(url.toString(), true);
+          html += `
+          <h2>Success</h2>
+          <p>Asset successfully added.</p>
+          <button class="closePopup">Close</button>`;
+
+          const listContainer: Element = this.domElement.querySelector('#popup');
+          listContainer.innerHTML = html;
+
+          $(".popup-overlay, .popup-content").addClass("active");
+          $(".closePopup").on("click", () => {
+            $(".popup-overlay, .popup-content").removeClass("active");
+            var url = new URL(`${commonConfig.url}/SitePages/${commonConfig.Page.AssetList}`);
+            Navigation.navigate(url.toString(), true);
+          });
+
+          console.log(result);
           return result;
         },
         error: (result) => {
@@ -745,10 +781,6 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
     try {
       if (this._checkURLParameter()) {
         $("#btnSubmit").html("Update");
-
-        console.log("formDetailsList");
-        console.log(formDetailsList);
-
         $('#idAssetName').val(formDetailsList.Name);
         $('#idAssetRefNo').val(formDetailsList.ReferenceNumber);
         $('#idOwnership').val(formDetailsList.Ownership);
@@ -797,7 +829,7 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
           this._checkIfServicingNotRequiredChecked();
         }
 
-        if (formDetailsList.AssetAttachments == null) {
+        if (formDetailsList.AssetAttachments.length == 0) {
           $('#attachmentTable').hide();
         }
         else {
@@ -842,67 +874,95 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
 
   private async _applicationDetails() {
     try {
+      var result: boolean = false;
       var servicingReq;
       var attachmentDetails: IAttachmentDetails[] = [];
       var typeOfAssetsValue = (<HTMLInputElement>document.getElementById('typeOfAssetList')).value;
+      var BuildingName = (<HTMLInputElement>document.getElementById('idBuildingName')).value;
+      var OfficeName = (<HTMLInputElement>document.getElementById('idOffice')).value;
+      var BuildingLocation = (<HTMLInputElement>document.getElementById('idBuildingLocation')).value;
+      var FloorNo = (<HTMLInputElement>document.getElementById('idFloor')).value;
 
-      if ($('#servicingNotRequired').is(':checked')) {
-        servicingReq = false;
+      if (OfficeName == "" || FloorNo == "" || BuildingName == "" || BuildingLocation == "" || typeOfAssetsValue == "") {
+        if (OfficeName == "") {
+          $('#requiredOffice').text("* Required Field!");
+        }
+        if (FloorNo == "") {
+          $('#requiredFloor').text("* Required Field!");
+        }
+        if (BuildingName == "") {
+          $('#requiredBuildingName').text("* Required Field!");
+        }
+        if (BuildingLocation == "") {
+          $('#requiredBuildingLocation').text("* Required Field!");
+        }
+        if (typeOfAssetsValue == "") {
+          $('#requiredTypeOfAsset').text("* Required Field!");
+        }
+        return result;
       }
-      else if ($('#servicingRequired').is(':checked')) {
-        servicingReq = true;
-      }
-
-      await this._convertFileToBinary();
-
-      if (this._checkURLParameter()) {
-        if (fileInfos.length > 0) {
-          fileInfos.forEach((file: any) => {
-            if (!file.file) {
+      else {
+        if ($('#servicingNotRequired').is(':checked')) {
+          servicingReq = false;
+        }
+        else if ($('#servicingRequired').is(':checked')) {
+          servicingReq = true;
+        }
+  
+        await this._convertFileToBinary();
+  
+        if (fileInfos.length > 0 || this.mainFileByteArray.length > 0) {
+          if (this._checkURLParameter() && fileInfos.length > 0) {
+            fileInfos.forEach((file: any) => {
+              if (!file.file) {
+                attachmentDetails.push({
+                  AttachmentGUID : file.AttachmentGUID,
+                  AttachmentFileName: file.AttachmentFileName,
+                  AttachmentFileContent: file.AttachmentFileContent
+                });
+              }
+            });
+          }
+          if (this.mainFileByteArray.length > 0) {
+            this.mainFileByteArray.forEach((file: any) => {
               attachmentDetails.push({
                 AttachmentGUID : file.AttachmentGUID,
                 AttachmentFileName: file.AttachmentFileName,
                 AttachmentFileContent: file.AttachmentFileContent
               });
-            }
-          });
+            });
+          }
         }
-      }
-      if (this.mainFileByteArray.length > 0) {
-        this.mainFileByteArray.forEach((file: any) => {
-          attachmentDetails.push({
-            AttachmentGUID : file.AttachmentGUID,
-            AttachmentFileName: file.AttachmentFileName,
-            AttachmentFileContent: file.AttachmentFileContent
-          });
+        else {
+          attachmentDetails = [];
+        }
+        
+        this.dynamicField = {
+          Name: (<HTMLInputElement>document.getElementById('idAssetName')).value,
+          ReferenceNumber: (<HTMLInputElement>document.getElementById('idAssetRefNo')).value,
+          BuildingName: (<HTMLInputElement>document.getElementById('idBuildingName')).value,
+          OfficeName: (<HTMLInputElement>document.getElementById('idOffice')).value,
+          BuildingLocation: (<HTMLInputElement>document.getElementById('idBuildingLocation')).value,
+          FloorNo: (<HTMLInputElement>document.getElementById('idFloor')).value,
+          Ownership: (<HTMLInputElement>document.getElementById('idOwnership')).value,
+          TypeOfAsset: (<HTMLInputElement>document.getElementById('typeOfAssetList')).value,
+          LastServicingDate: (<HTMLInputElement>document.getElementById('idLastServicingDate')).value,
+          ServicingPeriod: (<HTMLInputElement>document.getElementById('idServicingPeriod')).value,
+          Comment: (<HTMLInputElement>document.getElementById('idComments')).value,
+          AssetAttachments: attachmentDetails,
+          ServicingRequired: servicingReq
+        };
+  
+        this.arrFieldsRequired.forEach((item) => {
+          if (item.TypeOfAssets.Title == typeOfAssetsValue) {
+            var itemTitle = item.Title.replace(/ /g, "");
+            this.dynamicField[`${itemTitle}`] = (<HTMLInputElement>document.getElementById(`id${itemTitle}`)).value;
+          }
         });
-      }
-      else {
-        attachmentDetails = [];
-      }
-      
-      this.dynamicField = {
-        Name: (<HTMLInputElement>document.getElementById('idAssetName')).value,
-        ReferenceNumber: (<HTMLInputElement>document.getElementById('idAssetRefNo')).value,
-        BuildingName: (<HTMLInputElement>document.getElementById('idBuildingName')).value,
-        OfficeName: (<HTMLInputElement>document.getElementById('idOffice')).value,
-        BuildingLocation: (<HTMLInputElement>document.getElementById('idBuildingLocation')).value,
-        FloorNo: (<HTMLInputElement>document.getElementById('idFloor')).value,
-        Ownership: (<HTMLInputElement>document.getElementById('idOwnership')).value,
-        TypeOfAsset: (<HTMLInputElement>document.getElementById('typeOfAssetList')).value,
-        LastServicingDate: (<HTMLInputElement>document.getElementById('idLastServicingDate')).value,
-        ServicingPeriod: (<HTMLInputElement>document.getElementById('idServicingPeriod')).value,
-        Comment: (<HTMLInputElement>document.getElementById('idComments')).value,
-        AssetAttachments: attachmentDetails,
-        ServicingRequired: servicingReq
-      };
 
-      this.arrFieldsRequired.forEach((item) => {
-        if (item.TypeOfAssets.Title == typeOfAssetsValue) {
-          var itemTitle = item.Title.replace(/ /g, "");
-          this.dynamicField[`${itemTitle}`] = (<HTMLInputElement>document.getElementById(`id${itemTitle}`)).value;
-        }
-      });
+        result = true;
+        return result;
+      }
     }
     catch (error) {
       console.log(error);

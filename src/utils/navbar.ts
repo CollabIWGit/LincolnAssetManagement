@@ -1,9 +1,11 @@
+import * as commonConfig from "../utils/commonConfig.json";
+
 export class navbar {
     public cover: string = `<div id="cover"> <i class="fa-solid fa-rotate"></i> loading...</div>`;
 
     public navbar: string = `
     <div id="sidebar-wrapper">
-        <img id="imgLogo" src="https://lincolnrealtymu.sharepoint.com/sites/Lincoln/SiteAssets/Lincoln-Realty-Logo-orange.png" alternate="lincoln-logo">
+        <img id="imgLogo" src="${commonConfig.url}/SiteAssets/Lincoln-Realty-Logo-orange.png" alternate="lincoln-logo">
         <ul class="list-unstyled components mb-5">
             <li>
                 <a id="home">
@@ -62,6 +64,30 @@ export class navbar {
                         <li>
                             <a id="addUser">
                                 <span class="fa fa-plus"> </span> Add new User
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </li>
+            <li>
+                <a id="AdminManagement">
+                    <span class="fa fa-user mr-3"> </span>Admin Management
+                </a>
+                <div class="collapse4 collapse">
+                    <ul style="list-style-type:none;" id="caseManagementUl">
+                        <li>
+                            <a id="officesList">
+                                <span class="fa fa-list mr-3"> </span> Offices List
+                            </a>
+                        </li>
+                        <li>
+                            <a id="typeOfAsset">
+                                <span class="fa fa-list mr-3"> </span>Type of Assets List
+                            </a>
+                        </li>
+                        <li>
+                            <a id="natureOfProblem">
+                                <span class="fa fa-list mr-3"> </span>Nature Of Problem List
                             </a>
                         </li>
                     </ul>
