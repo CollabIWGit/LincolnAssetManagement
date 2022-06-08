@@ -521,8 +521,8 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
       grant_type: 'password',
       client_id: 'myClientId',
       client_secret: 'myClientSecret',
-      username: "roukaiyan@frci.net",
-      password: "Pa$$w0rd"
+      username: "admin2@lincolnrealty.mu",
+      password: "Pa$$w0rd1"
     };
 
     $.ajax({

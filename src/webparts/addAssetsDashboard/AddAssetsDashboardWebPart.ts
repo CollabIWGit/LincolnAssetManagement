@@ -793,8 +793,8 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
         grant_type: 'password',
         client_id: 'myClientId',
         client_secret: 'myClientSecret',
-        username: "roukaiyan@frci.net",
-        password: "Pa$$w0rd"
+        username: "admin2@lincolnrealty.mu",
+        password: "Pa$$w0rd1"
       };
 
       return $.ajax({
@@ -820,8 +820,8 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
         grant_type: 'password',
         client_id: 'myClientId',
         client_secret: 'myClientSecret',
-        username: "roukaiyan@frci.net",
-        password: "Pa$$w0rd"
+        username: "admin2@lincolnrealty.mu",
+        password: "Pa$$w0rd1"
       };
 
       $.ajax({
