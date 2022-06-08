@@ -31,6 +31,8 @@ var filteredOfficeName: any = [];
 var filteredTypeOfAsset: any = [];
 var filteredAssetRefNo: any = [];
 
+var buildingIDList: any = [];
+
 //#region Interfaces
 export interface IAddAssetsDashboardWebPartProps {
   description: string;
@@ -297,7 +299,6 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
     NavUtils.cover();
   }
 
-  //#region Filters
   private async _getListOfRefNo() {
     try {
       let html: string = '';
@@ -381,6 +382,19 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
                   mapObj.Title).indexOf(obj.Title) == pos;
               });
 
+              //Populate office from filters in local storage Part 2
+              if (this.BuildingsFilterFromLocalStorage.length > 0 && buildingIDList.length > 0) {
+                buildingIDList.forEach((buildingID: number) => {
+                  this.ListOfOffices.forEach((office: IOffices) => {
+                    if (buildingID == office.BuildingIDId) {
+                      if(jQuery.inArray(office.Title, filteredOfficeName) == -1) {
+                        filteredOfficeName.push(office.Title);
+                      }
+                    }
+                  });
+                });
+              }
+
               this._officeFilters();
             });
         });
@@ -393,7 +407,6 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
 
   private _getBuildingAndLocationList() {
     try {
-      let html: string = '';
       this.context.spHttpClient.get(`${this.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('${commonConfig.List.BuildingList}')/items`, SPHttpClient.configurations.v1)
         .then(response => {
           return response.json()
@@ -404,6 +417,18 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
                 return arr.map(mapObj =>
                   mapObj.Location).indexOf(obj.Location) == pos;
               });
+
+              //Populate office from filters in local storage Part 1
+              if (this.BuildingsFilterFromLocalStorage.length > 0) {
+                this.BuildingsFilterFromLocalStorage.forEach((buildingName: string) => {
+                  selectedBuildingArr.push(buildingName);
+                  this.ListOfBuildings.forEach((building: IBuildings) => {
+                    if (building.Title == buildingName) {
+                      buildingIDList.push(building.ID);
+                    }
+                  });
+                });
+              }
 
               // this._locationFilters();
               this._buildingFilters();
@@ -511,7 +536,6 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
       this._displayNoDataAvailable();
     }
   }
-  //#endregion
 
   private _locationFilters() {
     try {
@@ -586,9 +610,7 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
           });
         }
 
-        // if (selectedBuildingArr.length > 0) {
         await this._filterOfficesListOnBuildingChange();
-        // }
       });
     }
     catch (error) {
@@ -602,7 +624,7 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
       let html: string = "";
       selectedOfficeArr = [];
 
-      if (selectedLocationArr.length > 0 || selectedBuildingArr.length > 0) {
+      if (selectedLocationArr.length > 0 || selectedBuildingArr.length > 0 || this.BuildingsFilterFromLocalStorage.length > 0) {
         filteredOfficeName.forEach((officeName: string) => {
           html += `
           <div class="input-field">
@@ -704,36 +726,11 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
       });
     }
 
-    //Check if buildings checked in local storage
-    if (this.BuildingsFilterFromLocalStorage.length > 0) {
-      this._filterOfficeWithBuildingsLocalStorage();
-    }
-
     filteredOfficeName = filteredOfficeName.filter((element, index, self) => {
       return index === self.indexOf(element);
     });
 
     this._officeFilters();
-  }
-
-  private _filterOfficeWithBuildingsLocalStorage() {
-    try {
-      this.BuildingsFilterFromLocalStorage.forEach((buildingName: string) => {
-        this.ListOfBuildings.forEach((building: IBuildings) => {
-          if (building.Title == buildingName) {
-            this.ListOfOffices.forEach((office: IOffices) => {
-              if (building.ID == office.BuildingIDId) {
-                filteredOfficeName.push(office.Title);
-              }
-            });
-          }
-        });
-      });
-    }
-    catch (error) {
-      console.log(error);
-      return error;
-    }
   }
 
   private _filterAssetsOnOfficeChange() {
