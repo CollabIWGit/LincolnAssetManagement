@@ -17,10 +17,12 @@ import { navbar } from '../../utils/navbar';
 let Navbar = new navbar();
 
 require('../../../node_modules/bootstrap/dist/css/bootstrap.min.css');
+require('../../../node_modules/bootstrap/js/src/collapse.js');
 require('../../../node_modules/@fortawesome/fontawesome-free/css/all.min.css');
 require('../../styles/dashboardcss.css');
 require('../../styles/spcommon.css');
 require('../../styles/test.css');
+
 
 import * as commonConfig from "../../utils/commonConfig.json";
 
@@ -793,8 +795,8 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
         grant_type: 'password',
         client_id: 'myClientId',
         client_secret: 'myClientSecret',
-        username: "admin2@lincolnrealty.mu",
-        password: "Pa$$w0rd1"
+        username: "roukaiyan@frci.net",
+        password: "Pa$$w0rd"
       };
 
       return $.ajax({
@@ -820,8 +822,8 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
         grant_type: 'password',
         client_id: 'myClientId',
         client_secret: 'myClientSecret',
-        username: "admin2@lincolnrealty.mu",
-        password: "Pa$$w0rd1"
+        username: "roukaiyan@frci.net",
+        password: "Pa$$w0rd"
       };
 
       $.ajax({

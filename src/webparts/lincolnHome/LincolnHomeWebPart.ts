@@ -13,9 +13,9 @@ import { navbar } from '../../utils/navbar';
 let Navbar = new navbar();
 
 require('../../../node_modules/bootstrap/dist/css/bootstrap.min.css');
+require('../../../node_modules/bootstrap/js/src/collapse.js');
 require('../../../node_modules/@fortawesome/fontawesome-free/css/all.min.css');
 require('../../styles/spcommon.css');
-// require('../../styles/navbar.css');
 require('../../styles/style.css');
 require('../../styles/test.css');
 

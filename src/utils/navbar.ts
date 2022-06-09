@@ -5,7 +5,8 @@ export class navbar {
 
     public navbar: string = `
     <div id="sidebar-wrapper">
-        <img id="imgLogo" src="${commonConfig.url}/SiteAssets/Lincoln-Realty-Logo-orange.png" alternate="lincoln-logo">
+        <!--<img id="imgLogo" src="${commonConfig.url}/SiteAssets/Lincoln-Realty-Logo-orange.png" alternate="lincoln-logo">-->
+        <h2 style="color: #fff; text-align: center;">Demo Home</h2>
         <ul class="list-unstyled components mb-5">
             <li>
                 <a id="home">
@@ -13,11 +14,11 @@ export class navbar {
                 </a>
             </li>
             <li>
-                <a id="CaseMgt">
+                <a id="CaseMgt" href="#caseMngtSubmenu" data-toggle="collapse" aria-expanded="false" class="dropdown-toggle collapsed">
                     <span class="fas fa-file-contract mr-3"> </span>Case Management
                 </a>
                 <div class="collapse1 collapse">
-                    <ul style="list-style-type:none;" id="caseManagementUl">
+                    <ul class="collapse list-unstyled" id="caseMngtSubmenu" style="list-style-type:none;">
                         <li>
                             <a id="caseList">
                                 <span class="fa fa-list"> </span> List of Case
@@ -32,11 +33,11 @@ export class navbar {
                 </div>
             </li>
             <li>
-                <a id="AssetMgt">
+                <a id="AssetMgt" href="#assetMngtSubmenu" data-toggle="collapse" aria-expanded="false" class="dropdown-toggle collapsed">
                     <span class="fas fa-folder-open mr-3"></span>Asset Management
                 </a>
                 <div class="collapse2 collapse">
-                    <ul style="list-style-type:none;" id="assetManagementUl">
+                    <ul class="collapse list-unstyled" id="assetMngtSubmenu" style="list-style-type:none;">
                         <li>
                             <a id="assetList">
                                 <span class="fa fa-list"> </span> List of Assets
@@ -51,11 +52,11 @@ export class navbar {
                 </div>
             </li>
             <li id="userMgtComponent">
-                <a id="UserMgt">
+                <a id="UserMgt" href="#UserMngtSubmenu" data-toggle="collapse" aria-expanded="false" class="dropdown-toggle collapsed">
                     <span class="fa fa-user mr-3"> </span>User Management
                 </a>
                 <div class="collapse3 collapse">
-                    <ul style="list-style-type:none;" id="caseManagementUl">
+                    <ul class="collapse list-unstyled" id="UserMngtSubmenu" style="list-style-type:none;">
                         <li>
                             <a id="usersList">
                                 <span class="fa fa-list"> </span> List of Users
@@ -70,28 +71,26 @@ export class navbar {
                 </div>
             </li>
             <li>
-                <a id="AdminManagement">
+                <a id="AdminManagement" href="#adminMngtSubmenu" data-toggle="collapse" aria-expanded="false" class="dropdown-toggle collapsed">
                     <span class="fa fa-user mr-3"> </span>Admin Management
                 </a>
-                <div class="collapse4 collapse">
-                    <ul style="list-style-type:none;" id="caseManagementUl">
-                        <li>
-                            <a id="officesList">
-                                <span class="fa fa-list mr-3"> </span> Offices List
-                            </a>
-                        </li>
-                        <li>
-                            <a id="typeOfAsset">
-                                <span class="fa fa-list mr-3"> </span>Type of Assets List
-                            </a>
-                        </li>
-                        <li>
-                            <a id="natureOfProblem">
-                                <span class="fa fa-list mr-3"> </span>Nature Of Problem List
-                            </a>
-                        </li>
-                    </ul>
-                </div>
+                <ul class="collapse list-unstyled" id="adminMngtSubmenu" style="list-style-type:none;">
+                    <li>
+                        <a id="officesList">
+                            <span class="fa fa-list mr-3"> </span> Offices List
+                        </a>
+                    </li>
+                    <li>
+                        <a id="typeOfAsset">
+                            <span class="fa fa-list mr-3"> </span>Type of Assets List
+                        </a>
+                    </li>
+                    <li>
+                        <a id="natureOfProblem">
+                            <span class="fa fa-list mr-3"> </span>Nature Of Problem List
+                        </a>
+                    </li>
+                </ul>
             </li>
         </ul>
     </div>`;

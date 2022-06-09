@@ -17,11 +17,11 @@ import { navbar } from '../../utils/navbar';
 let Navbar = new navbar();
 
 require('../../../node_modules/bootstrap/dist/css/bootstrap.min.css');
+require('../../../node_modules/bootstrap/js/src/collapse.js');
 require('../../../node_modules/@fortawesome/fontawesome-free/css/all.min.css');
 require('../../styles/global.css');
 require('../../styles/spcommon.css');
 require('../../styles/test.css');
-// require('../../styles/navbar.css');
 
 import * as commonConfig from "../../utils/commonConfig.json";
 
@@ -521,8 +521,8 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
       grant_type: 'password',
       client_id: 'myClientId',
       client_secret: 'myClientSecret',
-      username: "admin2@lincolnrealty.mu",
-      password: "Pa$$w0rd1"
+      username: "roukaiyan@frci.net",
+      password: "Pa$$w0rd"
     };
 
     $.ajax({
@@ -575,19 +575,21 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
     $('#idFloor').val("");
     $('#idBuildingName').val("");
     $('#idBuildingLocation').val("");
-
-    this.floorNoFiltered = this.ListOfOffices.filter((obj, pos, arr) => {
-      return arr.map(mapObj =>
-        mapObj.FloorNumber).indexOf(obj.FloorNumber) == pos;
-    });
+    this.floorNoFiltered = [];
 
     html += '<option value="">Choose Floor</option>';
 
     this.ListOfOffices.forEach((item: IOffices) => {
       if (idOfficeValue == item.Title) {
-        html += `
-        <option value="${item.FloorNumber}">${item.FloorNumber}</option>`;
+        if(jQuery.inArray(item.FloorNumber, this.floorNoFiltered) == -1) {
+          this.floorNoFiltered.push(item.FloorNumber);
+        }
       }
+    });
+
+    this.floorNoFiltered.forEach((floor: number) => {
+      html += `
+        <option value="${floor}">${floor}</option>`;
     });
 
     const listContainer: Element = this.domElement.querySelector('#idFloor');
