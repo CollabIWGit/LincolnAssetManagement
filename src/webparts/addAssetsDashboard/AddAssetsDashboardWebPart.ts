@@ -17,10 +17,12 @@ import { navbar } from '../../utils/navbar';
 let Navbar = new navbar();
 
 require('../../../node_modules/bootstrap/dist/css/bootstrap.min.css');
+require('../../../node_modules/bootstrap/js/src/collapse.js');
 require('../../../node_modules/@fortawesome/fontawesome-free/css/all.min.css');
 require('../../styles/dashboardcss.css');
 require('../../styles/spcommon.css');
 require('../../styles/test.css');
+
 
 import * as commonConfig from "../../utils/commonConfig.json";
 
@@ -270,7 +272,7 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
     this._navigateToAddAssetForm();
     this._getAssetsAsync();
     this._loader();
-    NavUtils.collapse();
+    // NavUtils.collapse();
     NavUtils.navTriggers();
     // NavUtils.cover();
 
@@ -377,10 +379,14 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
             .then((items: any): void => {
               this.ListOfOffices = items.value;
 
+              console.log(this.ListOfOffices);
+
               this.ListOfOfficeFiltered = this.ListOfOffices.filter((obj, pos, arr) => {
                 return arr.map(mapObj =>
                   mapObj.Title).indexOf(obj.Title) == pos;
               });
+
+              console.log(this.ListOfOfficeFiltered);
 
               //Populate office from filters in local storage Part 2
               if (this.BuildingsFilterFromLocalStorage.length > 0 && buildingIDList.length > 0) {
@@ -610,6 +616,9 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
           });
         }
 
+        console.log("selectedBuildingArr");
+        console.log(selectedBuildingArr);
+
         await this._filterOfficesListOnBuildingChange();
       });
     }
@@ -712,6 +721,8 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
         this.ListOfBuildings.forEach((building: IBuildings) => {
           if (building.Title == buildingName) {
             this.ListOfOffices.forEach((office: IOffices) => {
+              console.log("building.ID: " + building.ID);
+              console.log("office.BuildingIDId: " + office.BuildingIDId);
               if (building.ID == office.BuildingIDId) {
                 filteredOfficeName.push(office.Title);
               }
