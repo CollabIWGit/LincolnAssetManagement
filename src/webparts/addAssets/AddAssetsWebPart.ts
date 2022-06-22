@@ -1,3 +1,4 @@
+//#region Imports
 import { //Guid, 
   Version} from '@microsoft/sp-core-library';
 import { IPropertyPaneConfiguration, PropertyPaneTextField } from '@microsoft/sp-property-pane';
@@ -24,13 +25,13 @@ require('../../styles/spcommon.css');
 require('../../styles/test.css');
 
 import * as commonConfig from "../../utils/commonConfig.json";
+//#endregion
 
 var fileInfos = [];
 var tempFileInfos = [];
 var filestream;
 var fixarray;
 var fileByteArray = [];
-
 
 //#region Interfaces
 export interface IAddAssetsWebPartProps {
@@ -114,10 +115,9 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
   private dynamicField: IDynamicField;
   private formDetails: IDynamicField;
   private floorNoFiltered: any = [];
+  private OfficeNameFiltered: any = [];
   private ListOfOffices: IOffices[];
   private ListOfBuildings: IBuildings[];
-  private ListOfBuildingsFiltered: IBuildings[];
-  private ListOfOfficeFiltered: IOffices[];
   public fileGUID: Guid;
   private mainFileByteArray = [];
 
@@ -166,24 +166,6 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
                     <div class="form-row">
                       <div class="col-md-6">
                         <div>
-                          <h7>Office <span class="required" id="requiredOffice">*</span></h7>
-                        </div>
-                        <div class="input-group">
-                          <select name="office" id="idOffice">
-                          </select>
-                        </div>
-                      </div>
-                      <div class="col-md-6">
-                        <div>
-                          <h7>Floor <span class="required" id="requiredFloor">*</span></h7>
-                        </div>
-                          <select name="Floor" id="idFloor">
-                          </select>
-                      </div>
-                    </div>
-                    <div class="form-row">
-                      <div class="col-md-6">
-                        <div>
                           <h7>Building Name <span class="required" id="requiredBuildingName">*</span></h7>
                         </div>
                         <div class="input-group">
@@ -198,6 +180,24 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
                         <div class="input-group">
                           <input type="text" id="idBuildingLocation" autocomplete="off"/> 
                         </div>
+                      </div>
+                    </div>
+                    <div class="form-row">
+                      <div class="col-md-6">
+                        <div>
+                          <h7>Office <span class="required" id="requiredOffice">*</span></h7>
+                        </div>
+                        <div class="input-group">
+                          <select name="office" id="idOffice">
+                          </select>
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div>
+                          <h7>Floor <span class="required" id="requiredFloor">*</span></h7>
+                        </div>
+                          <select name="Floor" id="idFloor">
+                          </select>
                       </div>
                     </div>
                     <div class="form-row">
@@ -309,7 +309,6 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
     this._checkAttachmentTable();
     this.AddEventListeners();
     this._getAccessToken();
-    // NavUtils.collapse();
     NavUtils.navTriggers();
     NavUtils.cover();
   }
@@ -321,9 +320,10 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
     document.getElementById('servicingRequired').addEventListener('change', () => this._checkIfServicingRequiredChecked());
     document.getElementById('servicingNotRequired').addEventListener('change', () => this._checkIfServicingNotRequiredChecked());
     document.getElementById('typeOfAssetList').addEventListener('change', () => this._renderFieldRequiredList(this.arrFieldsRequired));
-    document.getElementById('idOffice').addEventListener('change', () => this._getFloorNo());
-    document.getElementById('idFloor').addEventListener('change', () => this._populateBuildingsList(this.ListOfBuildings));
     document.getElementById('idBuildingName').addEventListener('change', () => this._populateLocation());
+    document.getElementById('idBuildingName').addEventListener('change', () => this._populateOfficesList(this.ListOfOffices));
+    document.getElementById('idOffice').addEventListener('change', () => this._getFloorNo());
+    document.getElementById('idFloor').addEventListener('change', () => this._getLastSequenceAssetRefNo(this.accessToken));
   }
 
   //#region Type of Asset List
@@ -542,30 +542,77 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
   }
 
   //#region GETs and populate dropdowns
-  private _getOfficesList() {
+  private _getBuildingsList() {
     let html: string = '';
+    this.context.spHttpClient.get(`${this.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('${commonConfig.List.BuildingList}')/items`, SPHttpClient.configurations.v1)
+      .then(response => {
+        return response.json()
+          .then((items: any): void => {
+            this.ListOfBuildings = items.value;
+
+            html += '<option value="">Choose Building</option>';
+
+            this.ListOfBuildings.forEach((item: IBuildings) => {
+              html += `
+              <option value="${item.Title}">${item.Title}</option>`;
+            });
+
+            const listContainer: Element = this.domElement.querySelector('#idBuildingName');
+            listContainer.innerHTML = html;
+          });
+      });
+  }
+
+  private _populateLocation() {
+    var idBuildingValue = (<HTMLInputElement>document.getElementById('idBuildingName')).value;
+
+    $('#idBuildingLocation').val("");
+
+    this.ListOfBuildings.forEach((item: IBuildings) => {
+      if (idBuildingValue == item.Title) {
+        $('#idBuildingLocation').val(item.Location);
+      }
+    });
+  }
+
+  private _getOfficesList() {
     this.context.spHttpClient.get(`${this.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('${commonConfig.List.OfficeList}')/items`, SPHttpClient.configurations.v1)
       .then(response => {
         return response.json()
           .then((items: any): void => {
             this.ListOfOffices = items.value;
-
-            this.ListOfOfficeFiltered = this.ListOfOffices.filter((obj, pos, arr) => {
-              return arr.map(mapObj =>
-                mapObj.Title).indexOf(obj.Title) == pos;
-            });
-
-            html += '<option value="">Choose Office</option>';
-
-            this.ListOfOfficeFiltered.forEach((item: IOffices) => {
-              html += `
-              <option value="${item.Title}">${item.Title}</option>`;
-            });
-
-            const listContainer: Element = this.domElement.querySelector('#idOffice');
-            listContainer.innerHTML = html;
           });
       });
+  }
+
+  private _populateOfficesList(officesList: IOffices[]) {
+    let html: string = '';
+    var idBuildingValue = (<HTMLInputElement>document.getElementById('idBuildingName')).value;
+
+    $('#idOffice').val("");
+    $('#idFloor').val("");
+    this.OfficeNameFiltered = [];
+
+    html += '<option value="">Choose Office</option>';
+
+    this.ListOfBuildings.forEach((itemBuilding: IBuildings) => {
+      if (idBuildingValue == itemBuilding.Title) {
+        officesList.forEach((itemOffice: IOffices) => {
+          if (itemBuilding.ID == itemOffice.BuildingIDId) {
+            if(jQuery.inArray(itemOffice.Title, this.OfficeNameFiltered) == -1) {
+              this.OfficeNameFiltered.push(itemOffice.Title);
+            }
+          }
+        });
+      }
+    });
+
+    this.OfficeNameFiltered.forEach((office: string) => {
+      html += `<option value="${office}">${office}</option>`;
+    });
+    
+    const listContainer: Element = this.domElement.querySelector('#idOffice');
+    listContainer.innerHTML = html;
   }
 
   private _getFloorNo(): void {
@@ -573,8 +620,6 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
     var idOfficeValue = (<HTMLInputElement>document.getElementById('idOffice')).value;
 
     $('#idFloor').val("");
-    $('#idBuildingName').val("");
-    $('#idBuildingLocation').val("");
     this.floorNoFiltered = [];
 
     html += '<option value="">Choose Floor</option>';
@@ -594,59 +639,6 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
 
     const listContainer: Element = this.domElement.querySelector('#idFloor');
     listContainer.innerHTML = html;
-  }
-
-  private _getBuildingsList() {
-    this.context.spHttpClient.get(`${this.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('${commonConfig.List.BuildingList}')/items`, SPHttpClient.configurations.v1)
-      .then(response => {
-        return response.json()
-          .then((items: any): void => {
-            this.ListOfBuildings = items.value;
-          });
-      });
-  }
-
-  private _populateBuildingsList(buildingsList: IBuildings[]) {
-    let html: string = '';
-    var idOfficeValue = (<HTMLInputElement>document.getElementById('idOffice')).value;
-    var idFloorValue = (<HTMLInputElement>document.getElementById('idFloor')).value;
-
-    $('#idBuildingName').val("");
-    $('#idBuildingLocation').val("");
-
-    html += '<option value="">Choose Building</option>';
-
-    this.ListOfOffices.forEach((itemOffice: IOffices) => {
-      if (idOfficeValue == itemOffice.Title && idFloorValue == itemOffice.FloorNumber.toString()) {
-        buildingsList.forEach((itemBuilding: IBuildings) => {
-          if (itemOffice.BuildingIDId == itemBuilding.ID) {
-            html += `
-            <option value="${itemBuilding.Title}">${itemBuilding.Title}</option>`;
-          }
-        });
-      }
-    });
-    const listContainer: Element = this.domElement.querySelector('#idBuildingName');
-    listContainer.innerHTML = html;
-  }
-
-  private _populateLocation() {
-    var idBuildingValue = (<HTMLInputElement>document.getElementById('idBuildingName')).value;
-
-    $('#idBuildingLocation').val("");
-
-    this.ListOfBuildingsFiltered = this.ListOfBuildings.filter((obj, pos, arr) => {
-      return arr.map(mapObj =>
-        mapObj.Location).indexOf(obj.Location) == pos;
-    });
-
-    this.ListOfBuildings.forEach((item: IBuildings) => {
-      if (idBuildingValue == item.Title) {
-        $('#idBuildingLocation').val(item.Location);
-      }
-    });
-
-    this._getLastSequenceAssetRefNo(this.accessToken);
   }
 
   private _getLastSequenceAssetRefNo(token: string) {
@@ -673,6 +665,8 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
     var buildingNameValue = (<HTMLInputElement>document.getElementById('idBuildingName')).value;
     var floorNoValue = (<HTMLInputElement>document.getElementById('idFloor')).value;
     var idOfficeValue = (<HTMLInputElement>document.getElementById('idOffice')).value;
+    var substrOffice = (idOfficeValue.replace(/ /g, "")).substring(0,3);
+    var strFloorNum = (floorNoValue.replace(/ /g, "")).replace(",", "");
 
     var nextSequenceNumber: number = +sequenceNum;
     var strNextSequenceNumber: string = nextSequenceNumber.toString();
@@ -681,11 +675,7 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
     }
     this.ListOfBuildings.forEach((itemBuilding: IBuildings) => {
       if (buildingNameValue == itemBuilding.Title) {
-        this.ListOfOfficeFiltered.forEach((itemOffice: IOffices) => {
-          if (idOfficeValue == itemOffice.Title) {
-            $('#idAssetRefNo').val(itemBuilding.ShortForm + "_" + floorNoValue + "_" + itemOffice.ShortForm + "_" + strNextSequenceNumber);
-          }
-        });
+        $('#idAssetRefNo').val(itemBuilding.ShortForm + "_" + strFloorNum + "_" + substrOffice + "_" + strNextSequenceNumber);
       }
     });
   }
@@ -807,7 +797,12 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
             var itemTitle = item.Title.replace(/ /g, "");
 
             if (itemTitle.indexOf("Date") >= 0) {
-              $(`#id${itemTitle}`).val(formDetailsList[`${itemTitle}`].substring(0, 10));
+              if (formDetailsList[`${itemTitle}`] != null) {
+                $(`#id${itemTitle}`).val(formDetailsList[`${itemTitle}`].substring(0, 10));
+              }
+              else {
+                $(`#id${itemTitle}`).val("");
+              }
             }
             else {
               $(`#id${itemTitle}`).val(formDetailsList[`${itemTitle}`]);

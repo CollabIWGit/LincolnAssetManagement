@@ -272,9 +272,8 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
     this._navigateToAddAssetForm();
     this._getAssetsAsync();
     this._loader();
-    // NavUtils.collapse();
     NavUtils.navTriggers();
-    // NavUtils.cover();
+    NavUtils.cover();
 
     this._getFiltersFromLocalStorage();
   }
