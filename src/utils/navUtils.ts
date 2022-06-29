@@ -140,7 +140,7 @@ export class navUtils {
     }
 
     public cover() {
-        $("#cover").fadeOut(4000);
+        $("#cover").fadeOut(3000);
         $("#menu-toggle").click((e) => {
             e.preventDefault();
             $("#wrapper").toggleClass("toggled");

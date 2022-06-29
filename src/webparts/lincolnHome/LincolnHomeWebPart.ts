@@ -1,3 +1,4 @@
+//#region Imports
 import { Version } from '@microsoft/sp-core-library';
 import { IPropertyPaneConfiguration, PropertyPaneTextField } from '@microsoft/sp-property-pane';
 import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
@@ -20,6 +21,7 @@ require('../../styles/style.css');
 require('../../styles/test.css');
 
 import * as commonConfig from "../../utils/commonConfig.json";
+//#endregion
 
 export interface ILincolnHomeWebPartProps {
   description: string;
@@ -41,6 +43,7 @@ export default class LincolnHomeWebPart extends BaseClientSideWebPart<ILincolnHo
                 <div class="mdc-layout-grid__inner">
                   <div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-8">
                     <div class="mdc-layout-grid__inner">
+
                       <div id="caseMgt" class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-6">
                         <div class="mdc-card py-3 pl-2 d-flex flex-row align-item-center dashboardCard">
                           <div class="mdc--tile mdc--tile-primary rounded">
@@ -51,6 +54,7 @@ export default class LincolnHomeWebPart extends BaseClientSideWebPart<ILincolnHo
                           </div>
                         </div>
                       </div>
+
                       <div id="assetMgt" class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-6">
                         <div class="mdc-card py-3 pl-2 d-flex flex-row align-item-center dashboardCard">
                           <div class="mdc--tile mdc--tile-warning rounded">
@@ -61,6 +65,7 @@ export default class LincolnHomeWebPart extends BaseClientSideWebPart<ILincolnHo
                           </div>
                         </div>
                       </div>
+
                       <div id="userMgt" class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-6">
                         <div class="mdc-card py-3 pl-2 d-flex flex-row align-item-center dashboardCard">
                           <div class="mdc--tile mdc--tile-success rounded">
@@ -71,6 +76,7 @@ export default class LincolnHomeWebPart extends BaseClientSideWebPart<ILincolnHo
                           </div>
                         </div>
                       </div>
+
                     </div>
                   </div>
                 </div>
@@ -82,7 +88,6 @@ export default class LincolnHomeWebPart extends BaseClientSideWebPart<ILincolnHo
     </div>`;
     
     this.setButtonsEventHandlers();
-    // NavUtils.collapse();
     NavUtils.navTriggers();
     NavUtils.cover();
   }

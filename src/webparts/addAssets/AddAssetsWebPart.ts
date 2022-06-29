@@ -1,6 +1,7 @@
 //#region Imports
 import { //Guid, 
-  Version} from '@microsoft/sp-core-library';
+  Version
+} from '@microsoft/sp-core-library';
 import { IPropertyPaneConfiguration, PropertyPaneTextField } from '@microsoft/sp-property-pane';
 import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
 import { escape } from '@microsoft/sp-lodash-subset';
@@ -10,6 +11,8 @@ import * as strings from 'AddAssetsWebPartStrings';
 import * as $ from "jquery";
 import { StringIterator } from 'lodash';
 import { Guid } from "guid-typescript";
+import { sp } from '@pnp/sp/presets/all';
+import * as moment from 'moment';
 
 import { navUtils } from '../../utils/navUtils';
 let NavUtils = new navUtils();
@@ -32,6 +35,7 @@ var tempFileInfos = [];
 var filestream;
 var fixarray;
 var fileByteArray = [];
+var folderID;
 
 //#region Interfaces
 export interface IAddAssetsWebPartProps {
@@ -51,11 +55,12 @@ export interface IApplicationDetailsList {
   LastServicingDate: string;
   ServicingPeriod: string;
   Comment: string;
+  FolderId: string;
   AssetAttachments: IAttachmentDetails[];
 }
 
 export interface IAttachmentDetails {
-  AttachmentGUID : string;
+  AttachmentGUID: string;
   AttachmentFileName: string;
   AttachmentFileContent: any[];
 }
@@ -119,7 +124,17 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
   private ListOfOffices: IOffices[];
   private ListOfBuildings: IBuildings[];
   public fileGUID: Guid;
+  public folderItemGUID: Guid;
   private mainFileByteArray = [];
+
+  protected onInit(): Promise<void> {
+
+    return super.onInit().then(_ => {
+      sp.setup({
+        spfxContext: this.context
+      });
+    });
+  }
 
   public render(): void {
     this.domElement.innerHTML = `${Navbar.cover}
@@ -241,8 +256,11 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
                         <div>
                           <h7>Servicing / Test Period</h7>
                         </div>
-                        <div class="input-group">
-                          <input type="text" id="idServicingPeriod" autocomplete="off"/> 
+                        <div class="form-row input-group">
+                          <input type="number" id="idServicingPeriod" autocomplete="off" placeholder="Enter servicing/test period in months" min="0" class="form-control"/>
+                          <div class="input-group-append">
+                            <span class="input-group-text" id="basic-addon1">Month(s)</span> 
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -278,10 +296,6 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
                           <tbody id="tableAttachmentContainer">
                           </tbody>
                         </table>
-                      </div>
-                    </div>
-                    <div class="form-row">
-                      <div id="testingFile">
                       </div>
                     </div>
                     
@@ -361,9 +375,9 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
   private _getDropdownListData(listName: string): Promise<IDropdownLists> {
     try {
       return this.context.spHttpClient.get(this.context.pageContext.web.absoluteUrl + `/_api/web/lists/GetByTitle('${listName}')/Items`, SPHttpClient.configurations.v1)
-      .then((response: SPHttpClientResponse) => {
-        return response.json();
-      });
+        .then((response: SPHttpClientResponse) => {
+          return response.json();
+        });
     }
     catch (error) {
       return error;
@@ -485,15 +499,19 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
   private async _submit() {
     try {
       let html: string = "";
-      var result: boolean = await this._applicationDetails();
+      
+      var result1: string = await this._addServicingDetailsToList();
+      console.log("result1: " + result1);
+      var result2: boolean = await this._applicationDetails();
+      console.log("result2: " + result2);
 
-      if (result) {
+      if (result2) {
         this._saveAsset(this.accessToken);
       }
       else {
         html += `
         <h2>Error</h2>
-        <p>Please fill all required fields.</p>
+        <p>An error has occurred.</p>
         <button class="closePopup">Close</button>`;
       }
 
@@ -534,6 +552,9 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
       success: (result) => {
         this.accessToken = result["access_token"];
         this._getAssetById(result["access_token"]);
+        if (this._checkURLParameter()) {
+          this._getAssetFolderID(result["access_token"]);
+        }
       },
       error: (result) => {
         return result;
@@ -599,7 +620,7 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
       if (idBuildingValue == itemBuilding.Title) {
         officesList.forEach((itemOffice: IOffices) => {
           if (itemBuilding.ID == itemOffice.BuildingIDId) {
-            if(jQuery.inArray(itemOffice.Title, this.OfficeNameFiltered) == -1) {
+            if (jQuery.inArray(itemOffice.Title, this.OfficeNameFiltered) == -1) {
               this.OfficeNameFiltered.push(itemOffice.Title);
             }
           }
@@ -610,7 +631,7 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
     this.OfficeNameFiltered.forEach((office: string) => {
       html += `<option value="${office}">${office}</option>`;
     });
-    
+
     const listContainer: Element = this.domElement.querySelector('#idOffice');
     listContainer.innerHTML = html;
   }
@@ -626,7 +647,7 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
 
     this.ListOfOffices.forEach((item: IOffices) => {
       if (idOfficeValue == item.Title) {
-        if(jQuery.inArray(item.FloorNumber, this.floorNoFiltered) == -1) {
+        if (jQuery.inArray(item.FloorNumber, this.floorNoFiltered) == -1) {
           this.floorNoFiltered.push(item.FloorNumber);
         }
       }
@@ -665,7 +686,7 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
     var buildingNameValue = (<HTMLInputElement>document.getElementById('idBuildingName')).value;
     var floorNoValue = (<HTMLInputElement>document.getElementById('idFloor')).value;
     var idOfficeValue = (<HTMLInputElement>document.getElementById('idOffice')).value;
-    var substrOffice = (idOfficeValue.replace(/ /g, "")).substring(0,3);
+    var substrOffice = (idOfficeValue.replace(/ /g, "")).substring(0, 3);
     var strFloorNum = (floorNoValue.replace(/ /g, "")).replace(",", "");
 
     var nextSequenceNumber: number = +sequenceNum;
@@ -683,7 +704,6 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
 
   private _saveAsset(token: string) {
     try {
-      let html: string = "";
       $.ajax({
         type: 'POST',
         url: commonConfig.baseUrl + '/api/Asset/SaveAsset',
@@ -694,20 +714,7 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
         data: JSON.stringify(this.dynamicField),
         contentType: 'application/json',
         success: (result) => {
-          html += `
-          <h2>Success</h2>
-          <p>Asset successfully added.</p>
-          <button class="closePopup">Close</button>`;
-
-          const listContainer: Element = this.domElement.querySelector('#popup');
-          listContainer.innerHTML = html;
-
-          $(".popup-overlay, .popup-content").addClass("active");
-          $(".closePopup").on("click", () => {
-            $(".popup-overlay, .popup-content").removeClass("active");
-            var url = new URL(`${commonConfig.url}/SitePages/${commonConfig.Page.AssetList}`);
-            Navigation.navigate(url.toString(), true);
-          });
+          this._popupMessage();
 
           console.log(result);
           return result;
@@ -722,6 +729,32 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
       console.log(error);
       return error;
     }
+  }
+
+  private _popupMessage() {
+    let html: string = "";
+    if (this._checkURLParameter()) {
+      html += `
+        <h2>Success</h2>
+        <p>Asset successfully updated.</p>
+        <button class="closePopup">Close</button>`;
+    }
+    else {
+      html += `
+        <h2>Success</h2>
+        <p>Asset successfully added.</p>
+        <button class="closePopup">Close</button>`;
+    }
+
+    const listContainer: Element = this.domElement.querySelector('#popup');
+    listContainer.innerHTML = html;
+
+    $(".popup-overlay, .popup-content").addClass("active");
+    $(".closePopup").on("click", () => {
+      $(".popup-overlay, .popup-content").removeClass("active");
+      var url = new URL(`${commonConfig.url}/SitePages/${commonConfig.Page.AssetList}`);
+      Navigation.navigate(url.toString(), true);
+    });
   }
 
   private _getAssetById(token: string): void {
@@ -748,6 +781,30 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
     else {
       $("#header_title").html(`Add New Asset Form`);
     }
+  }
+
+  private _getAssetFolderID(token: string): void {
+    folderID = 0;
+    var queryParms = new URLSearchParams(document.location.search.substring(1));
+    var myParm = queryParms.get("refNo");
+    var refNo = myParm.trim();
+
+    $.ajax({
+      type: 'GET',
+      url: commonConfig.baseUrl + `/api/Asset/GetAssetByRefNo?refNo=${refNo}`,
+      headers: {
+        Authorization: 'Bearer ' + token
+      },
+      success: (result) => {
+        console.log(result);
+        folderID = result["FolderId"];
+        return result;
+      },
+      error: (result) => {
+        console.log(result);
+        return result;
+      }
+    });
   }
 
   private _checkURLParameter() {
@@ -832,7 +889,7 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
         else {
           $('#attachmentTable').show();
           if (fileInfos.length == 0) {
-            formDetailsList.AssetAttachments.forEach(async(file: IAttachmentDetails) => {
+            formDetailsList.AssetAttachments.forEach(async (file: IAttachmentDetails) => {
               await fileInfos.push({
                 "AttachmentGUID": file.AttachmentGUID,
                 "AttachmentFileName": file.AttachmentFileName,
@@ -873,6 +930,7 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
     try {
       var result: boolean = false;
       var servicingReq;
+      var iFolderID;
       var attachmentDetails: IAttachmentDetails[] = [];
       var typeOfAssetsValue = (<HTMLInputElement>document.getElementById('typeOfAssetList')).value;
       var BuildingName = (<HTMLInputElement>document.getElementById('idBuildingName')).value;
@@ -905,15 +963,15 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
         else if ($('#servicingRequired').is(':checked')) {
           servicingReq = true;
         }
-  
+
         await this._convertFileToBinary();
-  
+
         if (fileInfos.length > 0 || this.mainFileByteArray.length > 0) {
           if (this._checkURLParameter() && fileInfos.length > 0) {
             fileInfos.forEach((file: any) => {
               if (!file.file) {
                 attachmentDetails.push({
-                  AttachmentGUID : file.AttachmentGUID,
+                  AttachmentGUID: file.AttachmentGUID,
                   AttachmentFileName: file.AttachmentFileName,
                   AttachmentFileContent: file.AttachmentFileContent
                 });
@@ -923,7 +981,7 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
           if (this.mainFileByteArray.length > 0) {
             this.mainFileByteArray.forEach((file: any) => {
               attachmentDetails.push({
-                AttachmentGUID : file.AttachmentGUID,
+                AttachmentGUID: file.AttachmentGUID,
                 AttachmentFileName: file.AttachmentFileName,
                 AttachmentFileContent: file.AttachmentFileContent
               });
@@ -933,7 +991,14 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
         else {
           attachmentDetails = [];
         }
-        
+
+        if (folderID > 0) {
+          iFolderID = folderID.toString();
+        }
+        else {
+          iFolderID = "";
+        }
+
         this.dynamicField = {
           Name: (<HTMLInputElement>document.getElementById('idAssetName')).value,
           ReferenceNumber: (<HTMLInputElement>document.getElementById('idAssetRefNo')).value,
@@ -947,9 +1012,10 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
           ServicingPeriod: (<HTMLInputElement>document.getElementById('idServicingPeriod')).value,
           Comment: (<HTMLInputElement>document.getElementById('idComments')).value,
           AssetAttachments: attachmentDetails,
-          ServicingRequired: servicingReq
+          ServicingRequired: servicingReq,
+          FolderId: iFolderID
         };
-  
+
         this.arrFieldsRequired.forEach((item) => {
           if (item.TypeOfAssets.Title == typeOfAssetsValue) {
             var itemTitle = item.Title.replace(/ /g, "");
@@ -967,6 +1033,121 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
     }
   }
 
+  //#region Servicing
+  private _addServicingDetailsToList(): Promise<string> {
+    return new Promise(async (resolve, reject) => {
+      try {
+        let listUri: string = '/sites/Lincoln/Lists/Asset%20Servicing';
+        var refNo = $('#idAssetRefNo').val();
+        var FolderID = null;
+        var newTitle;
+        this.folderItemGUID = Guid.create();
+
+        var lastServicingDate = moment(new Date((<HTMLInputElement>document.getElementById('idLastServicingDate')).value), "DD-MM-YYYY").format('YYYY-MM-DD');
+        var servicingPeriod = parseInt((<HTMLInputElement>document.getElementById('idServicingPeriod')).value);
+        var nextServicingDate = moment(lastServicingDate, "YYYY-MM-DD").add(servicingPeriod, 'months').format('YYYY-MM-DD');
+        var emailSendDate = moment(nextServicingDate, "YYYY-MM-DD").subtract(21, 'days').format('YYYY-MM-DD');
+
+        //Check if this is a new application and if servicing/test is true
+        if ($('#servicingRequired').is(':checked') && !this._checkURLParameter()) {
+          sp.web.lists.getByTitle("Asset Servicing").items.add({ Title: `${refNo}`, ContentTypeId: "0x0120" })
+            .then((resp) => {
+              FolderID = resp.data.ID;
+              folderID = resp.data.ID;
+              console.log("folder id 1: " + folderID);
+
+              resolve(folderID.toString());
+            })
+            .then(() => {
+              sp.web.lists.getByTitle("Asset Servicing").items.add({
+                Title: this.folderItemGUID.toString(),
+                AssetRefNo: refNo,
+                AssetName: $("#idAssetName").val(),
+                LastServicingDate: lastServicingDate,
+                ServicingPeriod: servicingPeriod,
+                NextServicingDate: nextServicingDate,
+                EmailSendDate: emailSendDate,
+                Building: $("#idBuildingName").val(),
+                Office: $("#idOffice").val(),
+                Floor: $("#idFloor").val(),
+                ReminderSent: false
+              })
+                .then((item: any) => {
+                  sp.web
+                    .getFileByServerRelativeUrl(`${listUri}/${item.data.ID}_.000`)
+                    .moveTo(`${listUri}/${FolderID}_.000/${this.folderItemGUID}`);
+                  console.log("Item added to folder.");
+                });
+            });
+        }
+        //Check if an existing asset is being updated
+        else if ($('#servicingRequired').is(':checked') && this._checkURLParameter()) {
+          this.context.spHttpClient.get(`${this.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('Asset Servicing')/items?$select=*&$filter=AssetRefNo eq '${refNo}'`, SPHttpClient.configurations.v1)
+            .then(response => {
+              return response.json()
+                .then((items: any): void => {
+                  items["value"].forEach((itemF: any) => {
+                    var strItemLSD = itemF.LastServicingDate.substring(0, 10);
+                    var strLSD = lastServicingDate.toString().substring(0, 10);
+                    newTitle = this.folderItemGUID;
+        
+                    //Check if last servicing date or servicing period has been updated
+                    if (this._strCompare(strItemLSD, strLSD) == 0 || itemF.ServicingPeriod.toString() != servicingPeriod) {
+                      //Check if reminder has already been sent
+                      if (itemF.ReminderSent) {
+                        console.log("In if");
+                        //Create new line in folder
+                        newTitle = this.folderItemGUID;
+                      }
+                      else {
+                        console.log("In else");
+                        //Update existing line in folder
+                        newTitle = itemF.Title;
+                      }
+
+                      sp.web.lists.getByTitle("Asset Servicing").items.add({
+                        Title: newTitle.toString(),
+                        AssetRefNo: refNo,
+                        AssetName: $("#idAssetName").val(),
+                        LastServicingDate: lastServicingDate,
+                        ServicingPeriod: servicingPeriod,
+                        NextServicingDate: nextServicingDate,
+                        EmailSendDate: emailSendDate,
+                        Building: $("#idBuildingName").val(),
+                        Office: $("#idOffice").val(),
+                        Floor: $("#idFloor").val(),
+                        ReminderSent: false
+                      })
+                        .then((item: any) => {
+                          sp.web
+                            .getFileByServerRelativeUrl(`${listUri}/${item.data.ID}_.000`)
+                            .moveTo(`${listUri}/${folderID}_.000/${newTitle}`);
+                          console.log("Item added to folder UPDATED VERSION.");
+                        });
+                    }
+                    resolve(folderID.toString());
+                  });
+                });
+            });
+        }
+      }
+      catch (error) {
+        console.log(error);
+        reject(error);
+      }
+    });
+  }
+
+  private _strCompare(date1: string, date2: string): number {
+    if (date1 == date2) {
+      return 1;
+    }
+    else {
+      return 0;
+    }
+  }
+  //#endregion
+
   //#region File functions
   private async _convertFileToBinary() {
     try {
@@ -981,21 +1162,21 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
             fileByteArray.push(element);
           }
           this.mainFileByteArray.push({
-            "AttachmentGUID" : file.AttachmentGUID,
-            "AttachmentFileName" : file.AttachmentFileName,
-            "AttachmentFileContent" : fileByteArray
+            "AttachmentGUID": file.AttachmentGUID,
+            "AttachmentFileName": file.AttachmentFileName,
+            "AttachmentFileContent": fileByteArray
           });
         }
       }
     }
-    catch(error) {
+    catch (error) {
       console.log(error);
     }
   }
 
   private readFile(file) {
     return new Promise((resolve, reject) => {
-      var fr = new FileReader();  
+      var fr = new FileReader();
       fr.onload = () => {
         resolve(fr.result);
       };
@@ -1020,13 +1201,13 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
 
     fileInfos.forEach((file: any) => {
       var fileNameNoSpace = file.AttachmentFileName.replace(/ /g, "");
-      
+
       html += `<tr id="tr_${fileNameNoSpace}_${file.AttachmentGUID}"><td class="th-lg" scope="row">${file.AttachmentFileName}</td>
       <td>
         <ul class="list-inline m-0">
-          <!--<li class="list-inline-item">
+          <li class="list-inline-item">
             <button class="btn btn-secondary btn-sm rounded-circle" type="button" data-toggle="tooltip" data-placement="top" title="View"><i class="fa fa-eye"></i></button>
-          </li>-->
+          </li>
           <li class="list-inline-item delete">
             <button class="btn btn-secondary btn-sm rounded-circle" id="btn_${fileNameNoSpace}_${file.AttachmentGUID}" type="button" data-toggle="tooltip" data-placement="top" title="Delete"><i class="fa fa-trash"></i></button>
           </li>
@@ -1061,7 +1242,7 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
           $('#attachmentTable').hide();
         }
       }
-      catch(error) {
+      catch (error) {
         console.log(error);
         return error;
       }
@@ -1071,7 +1252,7 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
   private blob() {
     var input = (<HTMLInputElement>document.getElementById("customFile"));
     var fileCount = input.files.length;
-    try{
+    try {
       tempFileInfos = [];
       for (var i = 0; i < fileCount; i++) {
         var file = input.files[i];
@@ -1084,22 +1265,22 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
               "AttachmentGUID": this.fileGUID.toString(),
               "AttachmentFileName": file1.name,
               "AttachmentFileContent": e.target.result,
-              "file" : file1
+              "file": file1
             });
-            
+
             tempFileInfos.push({
               "AttachmentGUID": this.fileGUID.toString(),
               "AttachmentFileName": file1.name,
               "AttachmentFileContent": e.target.result
             });
-            
+
             this._uploadToAttachmentTable();
           };
         })(file);
         reader.readAsArrayBuffer(file);
       }
     }
-    catch(error) {
+    catch (error) {
       return error;
     }
   }

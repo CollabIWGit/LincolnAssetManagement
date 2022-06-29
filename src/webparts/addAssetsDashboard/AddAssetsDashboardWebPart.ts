@@ -1,3 +1,4 @@
+//#region Imports
 import { Version } from '@microsoft/sp-core-library';
 import { IPropertyPaneConfiguration, PropertyPaneTextField } from '@microsoft/sp-property-pane';
 import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
@@ -23,8 +24,9 @@ require('../../styles/dashboardcss.css');
 require('../../styles/spcommon.css');
 require('../../styles/test.css');
 
-
 import * as commonConfig from "../../utils/commonConfig.json";
+import * as moment from 'moment';
+//#endregion
 
 var selectedLocationArr: any = [];
 var selectedBuildingArr: any = [];
@@ -119,7 +121,7 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
   private ListOfBuildings: IBuildings[];
   private ListOfOffices: IOffices[];
   private ListOfOfficeFiltered: IOffices[];
-  private ListOfBuildingsFiltered: IBuildings[];
+  // private ListOfBuildingsFiltered: IBuildings[];
 
   private LocationsFilterFromLocalStorage = [];
   private BuildingsFilterFromLocalStorage = [];
@@ -378,14 +380,10 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
             .then((items: any): void => {
               this.ListOfOffices = items.value;
 
-              console.log(this.ListOfOffices);
-
               this.ListOfOfficeFiltered = this.ListOfOffices.filter((obj, pos, arr) => {
                 return arr.map(mapObj =>
                   mapObj.Title).indexOf(obj.Title) == pos;
               });
-
-              console.log(this.ListOfOfficeFiltered);
 
               //Populate office from filters in local storage Part 2
               if (this.BuildingsFilterFromLocalStorage.length > 0 && buildingIDList.length > 0) {
@@ -399,6 +397,7 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
                   });
                 });
               }
+              filteredOfficeName.sort();
 
               this._officeFilters();
             });
@@ -418,10 +417,10 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
             .then((items: any): void => {
               this.ListOfBuildings = items.value;
 
-              this.ListOfBuildingsFiltered = this.ListOfBuildings.filter((obj, pos, arr) => {
-                return arr.map(mapObj =>
-                  mapObj.Location).indexOf(obj.Location) == pos;
-              });
+              // this.ListOfBuildingsFiltered = this.ListOfBuildings.filter((obj, pos, arr) => {
+              //   return arr.map(mapObj =>
+              //     mapObj.Location).indexOf(obj.Location) == pos;
+              // });
 
               //Populate office from filters in local storage Part 1
               if (this.BuildingsFilterFromLocalStorage.length > 0) {
@@ -470,12 +469,6 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
       $('#officeFilters input:checked').each(function () {
         selectedOfficeArr.push($(this).attr('name'));
       });
-
-      console.log(assetRefNoValue);
-      console.log(typeOfAssetValue);
-      console.log(selectedLocationArr);
-      console.log(selectedBuildingArr);
-      console.log(selectedOfficeArr);
 
       if (selectedLocationArr.length > 0) {
         selectedLocationArr.forEach((location: string) => {
@@ -542,47 +535,47 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
     }
   }
 
-  private _locationFilters() {
-    try {
-      let html: string = "";
+  // private _locationFilters() {
+  //   try {
+  //     let html: string = "";
 
-      this.ListOfBuildingsFiltered.forEach((item: IBuildings) => {
-        html += `
-        <div class="input-field">
-          <div class="custom-control custom-checkbox">
-            <input type="checkbox" class="custom-control-input location" id="${item.Location}" name="${item.Location}" value="${item.Location}" ${this.LocationsFilterFromLocalStorage.includes(item.Location) ? "checked" : ""}>
-            <label for="${item.Location}" class="custom-control-label"> ${item.Location}</label><br>
-          </div>
-        </div>`;
-      });
+  //     this.ListOfBuildingsFiltered.forEach((item: IBuildings) => {
+  //       html += `
+  //       <div class="input-field">
+  //         <div class="custom-control custom-checkbox">
+  //           <input type="checkbox" class="custom-control-input location" id="${item.Location}" name="${item.Location}" value="${item.Location}" ${this.LocationsFilterFromLocalStorage.includes(item.Location) ? "checked" : ""}>
+  //           <label for="${item.Location}" class="custom-control-label"> ${item.Location}</label><br>
+  //         </div>
+  //       </div>`;
+  //     });
 
-      const listContainer: Element = this.domElement.querySelector('#locationFilters');
-      listContainer.innerHTML = html;
+  //     const listContainer: Element = this.domElement.querySelector('#locationFilters');
+  //     listContainer.innerHTML = html;
 
-      $('.location').change(async () => {
-        var elementId: string = $(event.currentTarget).attr("id");
-        var element = <HTMLInputElement>document.getElementById(`${elementId}`);
-        if (element.checked) {
-          selectedLocationArr.push(elementId);
-        }
-        else {
-          selectedLocationArr.forEach(async (item, index) => {
-            if (item == elementId) {
-              selectedLocationArr.splice(index, 1);
-            }
-          });
-        }
+  //     $('.location').change(async () => {
+  //       var elementId: string = $(event.currentTarget).attr("id");
+  //       var element = <HTMLInputElement>document.getElementById(`${elementId}`);
+  //       if (element.checked) {
+  //         selectedLocationArr.push(elementId);
+  //       }
+  //       else {
+  //         selectedLocationArr.forEach(async (item, index) => {
+  //           if (item == elementId) {
+  //             selectedLocationArr.splice(index, 1);
+  //           }
+  //         });
+  //       }
 
-        if (selectedLocationArr.length > 0) {
-          await this._filterOfficesListOnLocationChange();
-        }
-      });
-    }
-    catch (error) {
-      console.log(error);
-      return error;
-    }
-  }
+  //       if (selectedLocationArr.length > 0) {
+  //         await this._filterOfficesListOnLocationChange();
+  //       }
+  //     });
+  //   }
+  //   catch (error) {
+  //     console.log(error);
+  //     return error;
+  //   }
+  // }
 
   private _buildingFilters() {
     try {
@@ -615,9 +608,6 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
           });
         }
 
-        console.log("selectedBuildingArr");
-        console.log(selectedBuildingArr);
-
         await this._filterOfficesListOnBuildingChange();
       });
     }
@@ -632,28 +622,35 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
       let html: string = "";
       selectedOfficeArr = [];
 
+      html += '<table class="tbl_OfficeList">';
       if (selectedLocationArr.length > 0 || selectedBuildingArr.length > 0 || this.BuildingsFilterFromLocalStorage.length > 0) {
         filteredOfficeName.forEach((officeName: string) => {
           html += `
-          <div class="input-field">
-            <div class="custom-control custom-checkbox">
-              <input type="checkbox" class="custom-control-input office" id="${officeName}" name="${officeName}" value="${officeName}" ${this.OfficesFilterFromLocalStorage.includes(officeName) ? "checked" : ""}>
-              <label for="${officeName}" class="custom-control-label"> ${officeName}</label><br>
-            </div>
-          </div>`;
+            <tr>
+              <td class="checkbox">
+                <div class="custom-control custom-checkbox">
+                  <input type="checkbox" class="custom-control-input office" id="${officeName}" name="${officeName}" value="${officeName}" ${this.OfficesFilterFromLocalStorage.includes(officeName) ? "checked" : ""}>
+                  <label for="${officeName}" class="custom-control-label"> ${officeName}</label><br>
+                </div>
+              </td>
+            </tr>`;
         });
       }
       else {
         this.ListOfOfficeFiltered.forEach((item: IOffices) => {
           html += `
-          <div class="input-field">
-            <div class="custom-control custom-checkbox">
-              <input type="checkbox" class="custom-control-input office" id="${item.Title}" name="${item.Title}" value="${item.Title}" ${this.OfficesFilterFromLocalStorage.includes(item.Title) ? "checked" : ""}>
-              <label for="${item.Title}" class="custom-control-label"> ${item.Title}</label><br>
-            </div>
-          </div>`;
+          <tr>
+            <td class="checkbox">
+              <div class="custom-control custom-checkbox">
+                <input type="checkbox" class="custom-control-input office" id="${item.Title}" name="${item.Title}" value="${item.Title}" ${this.OfficesFilterFromLocalStorage.includes(item.Title) ? "checked" : ""}>
+                <label for="${item.Title}" class="custom-control-label"> ${item.Title}</label><br>
+              </div>
+            </td>
+          </tr>`;
         });
       }
+
+      html += '</table>';
 
       const listContainer: Element = this.domElement.querySelector('#officeFilters');
       listContainer.innerHTML = html;
@@ -686,29 +683,29 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
     }
   }
 
-  private _filterOfficesListOnLocationChange() {
-    filteredOfficeName = [];
-    filteredTypeOfAsset = [];
-    filteredAssetRefNo = [];
+  // private _filterOfficesListOnLocationChange() {
+  //   filteredOfficeName = [];
+  //   filteredTypeOfAsset = [];
+  //   filteredAssetRefNo = [];
 
-    selectedLocationArr.forEach((location: string) => {
-      this.ListOfBuildings.forEach((building: IBuildings) => {
-        if (building.Location == location) {
-          this.ListOfOffices.forEach((office: IOffices) => {
-            if (building.ID == office.BuildingIDId) {
-              filteredOfficeName.push(office.Title);
-            }
-          });
-        }
-      });
-    });
+  //   selectedLocationArr.forEach((location: string) => {
+  //     this.ListOfBuildings.forEach((building: IBuildings) => {
+  //       if (building.Location == location) {
+  //         this.ListOfOffices.forEach((office: IOffices) => {
+  //           if (building.ID == office.BuildingIDId) {
+  //             filteredOfficeName.push(office.Title);
+  //           }
+  //         });
+  //       }
+  //     });
+  //   });
 
-    filteredOfficeName = filteredOfficeName.filter((element, index, self) => {
-      return index === self.indexOf(element);
-    });
+  //   filteredOfficeName = filteredOfficeName.filter((element, index, self) => {
+  //     return index === self.indexOf(element);
+  //   });
 
-    this._officeFilters();
-  }
+  //   this._officeFilters();
+  // }
 
   private _filterOfficesListOnBuildingChange() {
     filteredOfficeName = [];
@@ -720,8 +717,6 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
         this.ListOfBuildings.forEach((building: IBuildings) => {
           if (building.Title == buildingName) {
             this.ListOfOffices.forEach((office: IOffices) => {
-              console.log("building.ID: " + building.ID);
-              console.log("office.BuildingIDId: " + office.BuildingIDId);
               if (building.ID == office.BuildingIDId) {
                 filteredOfficeName.push(office.Title);
               }
@@ -897,6 +892,8 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
             <th class="text-left">Type of Assets</th>
             <th class="text-left">Asset Reference No</th>
             <th class="text-left">Asset Name</th>
+            <th class="text-left">Last Servicing Date</th>
+            <th class="text-left">Next Servicing Date</th>
             <th class="text-center">View</th>
             <th class="text-center">Delete</th>
           </tr>
@@ -904,11 +901,17 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
         <tbody id="tb_asset_list">`;
 
       listOfAssets.forEach((item: IDynamicField) => {
-        html += `
+        if(item.ServicingRequired) {
+          var lastServicingDate = item.LastServicingDate.substring(0, 10);
+          var lastServicingDateFormatted = moment(lastServicingDate, "YYYY-MM-DD").format('DD/MM/YYYY');
+          var nextServicingDate = moment(lastServicingDateFormatted, "DD/MM/YYYY").add(item.ServicingPeriod, 'months').format('DD/MM/YYYY');
+          html += `
           <tr>
             <td class="text-left">${item.TypeOfAsset}</td>
             <td class="text-left">${item.ReferenceNumber}</td>
             <td class="text-left">${item.Name}</td>
+            <td class="text-left">${lastServicingDateFormatted}</td>
+            <td class="text-left">${nextServicingDate}</td>
             <td class="text-center view">                
               <button class="btn btn-sm rounded-circle" id="btn_${item.ReferenceNumber}_View" type="button"><i class="fa fa-eye"></i></button>
             </td>
@@ -916,7 +919,25 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
               <button class="btn btn-sm rounded-circle" id="btn_${item.ReferenceNumber}_Delete" type="button"><i class="fa fa-trash"></i></button>
             </td>
           </tr>`;
+        }
+        else {
+          html += `
+          <tr>
+            <td class="text-left">${item.TypeOfAsset}</td>
+            <td class="text-left">${item.ReferenceNumber}</td>
+            <td class="text-left">${item.Name}</td>
+            <td class="text-left">N/A</td>
+            <td class="text-left">N/A</td>
+            <td class="text-center view">                
+              <button class="btn btn-sm rounded-circle" id="btn_${item.ReferenceNumber}_View" type="button"><i class="fa fa-eye"></i></button>
+            </td>
+            <td class="text-center delete">                
+              <button class="btn btn-sm rounded-circle" id="btn_${item.ReferenceNumber}_Delete" type="button"><i class="fa fa-trash"></i></button>
+            </td>
+          </tr>`;
+        }
       });
+        
       html += `</tbody>
       </table>`;
 
@@ -955,7 +976,7 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
         },
         responsive: true,
         columnDefs: [
-          { orderable: false, targets: [3, 4] }
+          { orderable: false, targets: [5, 6] }
         ],
         order: [[0, "asc"]]
       });
@@ -977,6 +998,20 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
       $('#AssetName').on('keyup', 'input', function () {
         table
           .columns(2)
+          .search(this.value)
+          .draw();
+      });
+
+      $('#LastServicingDate').on('keyup', 'input', function () {
+        table
+          .columns(3)
+          .search(this.value)
+          .draw();
+      });
+
+      $('#NextServicingDate').on('keyup', 'input', function () {
+        table
+          .columns(4)
           .search(this.value)
           .draw();
       });

@@ -67,6 +67,12 @@ select {
   transition: all 0.35s ease-in-out;
 }
 
+#idServicingPeriod {
+  height: 48px;
+  background-color:#f9f9f9;
+  border: 1px solid #e5e5e5;
+}
+
 textarea {
   width: 100%;
   height: 10em;
@@ -97,9 +103,11 @@ input:disabled, #idAssetRefNo {
   background-color:#e5e5e5;
 }
 
-input:focus, textarea:focus {
+input:focus, textarea:focus, #idServicingPeriod:focus
+{
   outline: 0;
   border-color: #bd8200;
+  box-shadow: none;
 }
 
 input:focus + .input-icon i {
