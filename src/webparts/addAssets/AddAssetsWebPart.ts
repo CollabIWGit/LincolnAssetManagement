@@ -13,6 +13,7 @@ import { StringIterator } from 'lodash';
 import { Guid } from "guid-typescript";
 import { sp } from '@pnp/sp/presets/all';
 import * as moment from 'moment';
+import * as mime from 'mime-types';
 
 import { navUtils } from '../../utils/navUtils';
 let NavUtils = new navUtils();
@@ -31,6 +32,7 @@ import * as commonConfig from "../../utils/commonConfig.json";
 //#endregion
 
 var fileInfos = [];
+var fileDownloadInfos = [];
 var tempFileInfos = [];
 var filestream;
 var fixarray;
@@ -499,9 +501,13 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
   private async _submit() {
     try {
       let html: string = "";
-      
-      var result1: string = await this._addServicingDetailsToList();
-      console.log("result1: " + result1);
+
+      //If servicing/test is true
+      if ($('#servicingRequired').is(':checked')) {
+        var result1: string = await this._addServicingDetailsToList();
+        console.log("result1: " + result1);
+      }
+
       var result2: boolean = await this._applicationDetails();
       console.log("result2: " + result2);
 
@@ -752,8 +758,15 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
     $(".popup-overlay, .popup-content").addClass("active");
     $(".closePopup").on("click", () => {
       $(".popup-overlay, .popup-content").removeClass("active");
-      var url = new URL(`${commonConfig.url}/SitePages/${commonConfig.Page.AssetList}`);
-      Navigation.navigate(url.toString(), true);
+      // If updating asset, reload page
+      if (this._checkURLParameter()) {
+        location.reload();
+      }
+      // If adding new asset, redirect to asset list page
+      else {
+        var url = new URL(`${commonConfig.url}/SitePages/${commonConfig.Page.AssetList}`);
+        Navigation.navigate(url.toString(), true);
+      }
     });
   }
 
@@ -896,7 +909,10 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
                 "AttachmentFileContent": file.AttachmentFileContent
               });
             });
+            console.log(fileInfos);
+            this._populateDownloadInfos();
           }
+
           this._populateAttachmentTable();
         }
 
@@ -1080,7 +1096,7 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
                 });
             });
         }
-        //Check if an existing asset is being updated
+        //Check if an existing asset is being updated and if servicing/test is true
         else if ($('#servicingRequired').is(':checked') && this._checkURLParameter()) {
           this.context.spHttpClient.get(`${this.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('Asset Servicing')/items?$select=*&$filter=AssetRefNo eq '${refNo}'`, SPHttpClient.configurations.v1)
             .then(response => {
@@ -1090,7 +1106,7 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
                     var strItemLSD = itemF.LastServicingDate.substring(0, 10);
                     var strLSD = lastServicingDate.toString().substring(0, 10);
                     newTitle = this.folderItemGUID;
-        
+
                     //Check if last servicing date or servicing period has been updated
                     if (this._strCompare(strItemLSD, strLSD) == 0 || itemF.ServicingPeriod.toString() != servicingPeriod) {
                       //Check if reminder has already been sent
@@ -1185,6 +1201,29 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
     });
   }
 
+  private _populateDownloadInfos() {
+    return new Promise(async (resolve, reject) => {
+      try {
+        fileInfos.forEach(async (file: any) => {
+          var fileExtension: string = file.AttachmentFileName.substr(file.AttachmentFileName.lastIndexOf(".") + 1);
+          var strDecoded = atob(file.AttachmentFileContent);
+          console.log("fileContentType: " + mime.lookup(`${fileExtension}`));
+          console.log("strDecoded: " + strDecoded);
+          await fileDownloadInfos.push({
+            "linkSource": `data:${mime.lookup(`${fileExtension}`)};base64,${strDecoded}`,
+            "fileName": file.AttachmentFileName
+          });
+          resolve(fileDownloadInfos);
+          console.log(fileDownloadInfos);
+        });
+      }
+      catch (error) {
+        console.log(error);
+        reject(error);
+      }
+    });
+  }
+
   private _uploadToAttachmentTable() {
     this._checkAttachmentTable();
     var fileCount = (<HTMLInputElement>document.getElementById("customFile")).files.length;
@@ -1205,8 +1244,8 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
       html += `<tr id="tr_${fileNameNoSpace}_${file.AttachmentGUID}"><td class="th-lg" scope="row">${file.AttachmentFileName}</td>
       <td>
         <ul class="list-inline m-0">
-          <li class="list-inline-item">
-            <button class="btn btn-secondary btn-sm rounded-circle" type="button" data-toggle="tooltip" data-placement="top" title="View"><i class="fa fa-eye"></i></button>
+          <li class="list-inline-item view">
+            <button class="btn btn-secondary btn-sm rounded-circle" id="btn_${fileNameNoSpace}_${file.AttachmentGUID}" type="button" data-toggle="tooltip" data-placement="top" title="View"><i class="fa-solid fa-download"></i></button>
           </li>
           <li class="list-inline-item delete">
             <button class="btn btn-secondary btn-sm rounded-circle" id="btn_${fileNameNoSpace}_${file.AttachmentGUID}" type="button" data-toggle="tooltip" data-placement="top" title="Delete"><i class="fa fa-trash"></i></button>
@@ -1217,6 +1256,39 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
 
     const listContainer: Element = this.domElement.querySelector('#tableAttachmentContainer');
     listContainer.innerHTML = html;
+
+    $("#tableAttachmentContainer").on('click', '.view', function () {
+      try {
+        console.log("In click view");
+        var trid = $(this).closest('tr').attr('id').substring(3);
+        var tridFields = trid.split('_');
+        var tridFileName = tridFields[0];
+        var tridId = tridFields[1];
+
+        console.log("file download info");
+        console.log(fileDownloadInfos);
+
+        if (fileDownloadInfos.length > 0) {
+          fileDownloadInfos.forEach((file: any) => {
+            var fileNameReplace = file.fileName.replace(/ /g, "");
+            if (tridFileName == fileNameReplace && tridId == file.AttachmentGUID) {
+              console.log("in if statement");
+              const linkSource = `${file.linkSource}`;
+              const downloadLink = document.createElement("a");
+              downloadLink.href = linkSource;
+              downloadLink.download = file.fileName;
+              console.log(downloadLink);
+              downloadLink.click();
+
+            }
+          });
+        }
+      }
+      catch (error) {
+        console.log(error);
+        return error;
+      }
+    });
 
     $("#tableAttachmentContainer").on('click', '.delete', function () {
       try {
