@@ -1027,8 +1027,8 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
 
       //Click delete btn
       $('#tbl_asset_list').on('click', '.delete', function () {
-        if (confirm("Are you sure you want to delete this asset?")) {
-          var data = table.row($(this).parents('tr')).data();
+        var data = table.row($(this).parents('tr')).data();
+        if (confirm("Are you sure you want to delete asset " + data[1] + "?")) {
           $.ajax({
             type: 'DELETE',
             data: { 'action': 'delete' },

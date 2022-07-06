@@ -24,6 +24,7 @@ let Navbar = new navbar();
 require('../../../node_modules/bootstrap/dist/css/bootstrap.min.css');
 require('../../../node_modules/bootstrap/js/src/collapse.js');
 require('../../../node_modules/@fortawesome/fontawesome-free/css/all.min.css');
+require('../../../node_modules/@fortawesome/fontawesome-free/css/fontawesome.css');
 require('../../styles/global.css');
 require('../../styles/spcommon.css');
 require('../../styles/test.css');
@@ -1070,7 +1071,7 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
             .then((resp) => {
               FolderID = resp.data.ID;
               folderID = resp.data.ID;
-              console.log("folder id 1: " + folderID);
+              console.log("folder created: " + folderID);
 
               resolve(folderID.toString());
             })
@@ -1102,47 +1103,83 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
             .then(response => {
               return response.json()
                 .then((items: any): void => {
-                  items["value"].forEach((itemF: any) => {
-                    var strItemLSD = itemF.LastServicingDate.substring(0, 10);
-                    var strLSD = lastServicingDate.toString().substring(0, 10);
-                    newTitle = this.folderItemGUID;
+                  //Check if folder exists
+                  if (items["value"].length > 0) {
+                    items["value"].forEach((itemF: any) => {
+                      var strItemLSD = itemF.LastServicingDate.substring(0, 10);
+                      var strLSD = lastServicingDate.toString().substring(0, 10);
+                      newTitle = this.folderItemGUID;
 
-                    //Check if last servicing date or servicing period has been updated
-                    if (this._strCompare(strItemLSD, strLSD) == 0 || itemF.ServicingPeriod.toString() != servicingPeriod) {
-                      //Check if reminder has already been sent
-                      if (itemF.ReminderSent) {
-                        console.log("In if");
-                        //Create new line in folder
-                        newTitle = this.folderItemGUID;
-                      }
-                      else {
-                        console.log("In else");
-                        //Update existing line in folder
-                        newTitle = itemF.Title;
-                      }
+                      //Check if last servicing date or servicing period has been updated
+                      if (this._strCompare(strItemLSD, strLSD) == 0 || itemF.ServicingPeriod.toString() != servicingPeriod) {
+                        //Check if reminder has already been sent
+                        if (itemF.ReminderSent) {
+                          console.log("In if");
+                          //Create new line in folder
+                          newTitle = this.folderItemGUID;
+                        }
+                        else {
+                          console.log("In else");
+                          //Update existing line in folder
+                          newTitle = itemF.Title;
+                        }
 
-                      sp.web.lists.getByTitle("Asset Servicing").items.add({
-                        Title: newTitle.toString(),
-                        AssetRefNo: refNo,
-                        AssetName: $("#idAssetName").val(),
-                        LastServicingDate: lastServicingDate,
-                        ServicingPeriod: servicingPeriod,
-                        NextServicingDate: nextServicingDate,
-                        EmailSendDate: emailSendDate,
-                        Building: $("#idBuildingName").val(),
-                        Office: $("#idOffice").val(),
-                        Floor: $("#idFloor").val(),
-                        ReminderSent: false
+                        sp.web.lists.getByTitle("Asset Servicing").items.add({
+                          Title: newTitle.toString(),
+                          AssetRefNo: refNo,
+                          AssetName: $("#idAssetName").val(),
+                          LastServicingDate: lastServicingDate,
+                          ServicingPeriod: servicingPeriod,
+                          NextServicingDate: nextServicingDate,
+                          EmailSendDate: emailSendDate,
+                          Building: $("#idBuildingName").val(),
+                          Office: $("#idOffice").val(),
+                          Floor: $("#idFloor").val(),
+                          ReminderSent: false
+                        })
+                          .then((item: any) => {
+                            sp.web
+                              .getFileByServerRelativeUrl(`${listUri}/${item.data.ID}_.000`)
+                              .moveTo(`${listUri}/${folderID}_.000/${newTitle}`);
+                            console.log("Item added to folder UPDATED VERSION.");
+                          });
+                      }
+                      resolve(folderID.toString());
+                    });
+                  }
+                  //If folder doesn't exist
+                  else {
+                    console.log("Folder doesn't exist");
+                    sp.web.lists.getByTitle("Asset Servicing").items.add({ Title: `${refNo}`, ContentTypeId: "0x0120" })
+                      .then((resp) => {
+                        FolderID = resp.data.ID;
+                        folderID = resp.data.ID;
+                        console.log("folder created: " + folderID);
+
+                        resolve(folderID.toString());
                       })
-                        .then((item: any) => {
-                          sp.web
-                            .getFileByServerRelativeUrl(`${listUri}/${item.data.ID}_.000`)
-                            .moveTo(`${listUri}/${folderID}_.000/${newTitle}`);
-                          console.log("Item added to folder UPDATED VERSION.");
-                        });
-                    }
-                    resolve(folderID.toString());
-                  });
+                      .then(() => {
+                        sp.web.lists.getByTitle("Asset Servicing").items.add({
+                          Title: this.folderItemGUID.toString(),
+                          AssetRefNo: refNo,
+                          AssetName: $("#idAssetName").val(),
+                          LastServicingDate: lastServicingDate,
+                          ServicingPeriod: servicingPeriod,
+                          NextServicingDate: nextServicingDate,
+                          EmailSendDate: emailSendDate,
+                          Building: $("#idBuildingName").val(),
+                          Office: $("#idOffice").val(),
+                          Floor: $("#idFloor").val(),
+                          ReminderSent: false
+                        })
+                          .then((item: any) => {
+                            sp.web
+                              .getFileByServerRelativeUrl(`${listUri}/${item.data.ID}_.000`)
+                              .moveTo(`${listUri}/${FolderID}_.000/${this.folderItemGUID}`);
+                            console.log("Item added to folder.");
+                          });
+                      });
+                  }
                 });
             });
         }
@@ -1210,8 +1247,9 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
           console.log("fileContentType: " + mime.lookup(`${fileExtension}`));
           console.log("strDecoded: " + strDecoded);
           await fileDownloadInfos.push({
-            "linkSource": `data:${mime.lookup(`${fileExtension}`)};base64,${strDecoded}`,
-            "fileName": file.AttachmentFileName
+            "linkSource": `data:${mime.lookup(`${fileExtension}`)};base64,${file.AttachmentFileContent}`,
+            "fileName": file.AttachmentFileName,
+            "AttachmentGUID": file.AttachmentGUID
           });
           resolve(fileDownloadInfos);
           console.log(fileDownloadInfos);
@@ -1245,7 +1283,7 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
       <td>
         <ul class="list-inline m-0">
           <li class="list-inline-item view">
-            <button class="btn btn-secondary btn-sm rounded-circle" id="btn_${fileNameNoSpace}_${file.AttachmentGUID}" type="button" data-toggle="tooltip" data-placement="top" title="View"><i class="fa-solid fa-download"></i></button>
+            <button class="btn btn-secondary btn-sm rounded-circle" id="btn_${fileNameNoSpace}_${file.AttachmentGUID}" type="button" data-toggle="tooltip" data-placement="top" title="View"><i class="fa fa-download"></i></button>
           </li>
           <li class="list-inline-item delete">
             <button class="btn btn-secondary btn-sm rounded-circle" id="btn_${fileNameNoSpace}_${file.AttachmentGUID}" type="button" data-toggle="tooltip" data-placement="top" title="Delete"><i class="fa fa-trash"></i></button>
@@ -1265,19 +1303,24 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
         var tridFileName = tridFields[0];
         var tridId = tridFields[1];
 
-        console.log("file download info");
-        console.log(fileDownloadInfos);
-
         if (fileDownloadInfos.length > 0) {
+          console.log("In if statement");
           fileDownloadInfos.forEach((file: any) => {
+            console.log("In foreach file");
+            console.log(file);
             var fileNameReplace = file.fileName.replace(/ /g, "");
+
+            console.log("tridFileName: " + tridFileName);
+            console.log("fileNameReplace: " + fileNameReplace);
+
+            console.log("tridId: " + tridId);
+            console.log("file.AttachmentGUID: " + file.AttachmentGUID);
             if (tridFileName == fileNameReplace && tridId == file.AttachmentGUID) {
               console.log("in if statement");
               const linkSource = `${file.linkSource}`;
               const downloadLink = document.createElement("a");
               downloadLink.href = linkSource;
               downloadLink.download = file.fileName;
-              console.log(downloadLink);
               downloadLink.click();
 
             }
