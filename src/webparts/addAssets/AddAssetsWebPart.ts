@@ -503,14 +503,8 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
     try {
       let html: string = "";
 
-      //If servicing/test is true
-      if ($('#servicingRequired').is(':checked')) {
-        var result1: string = await this._addServicingDetailsToList();
-        console.log("result1: " + result1);
-      }
-
+      var result1: string = await this._addServicingDetailsToList();
       var result2: boolean = await this._applicationDetails();
-      console.log("result2: " + result2);
 
       if (result2) {
         this._saveAsset(this.accessToken);
@@ -572,23 +566,34 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
   //#region GETs and populate dropdowns
   private _getBuildingsList() {
     let html: string = '';
-    this.context.spHttpClient.get(`${this.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('${commonConfig.List.BuildingList}')/items`, SPHttpClient.configurations.v1)
-      .then(response => {
-        return response.json()
-          .then((items: any): void => {
-            this.ListOfBuildings = items.value;
+    return new Promise(async (resolve, reject) => {
+      try {
+        this.context.spHttpClient.get(`${this.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('${commonConfig.List.BuildingList}')/items`, SPHttpClient.configurations.v1)
+          .then(response => {
+            return response.json()
+              .then((items: any): void => {
+                this.ListOfBuildings = items.value;
 
-            html += '<option value="">Choose Building</option>';
+                html += '<option value="">Choose Building</option>';
 
-            this.ListOfBuildings.forEach((item: IBuildings) => {
-              html += `
+                this.ListOfBuildings.forEach((item: IBuildings) => {
+                  html += `
               <option value="${item.Title}">${item.Title}</option>`;
-            });
+                });
 
-            const listContainer: Element = this.domElement.querySelector('#idBuildingName');
-            listContainer.innerHTML = html;
+                const listContainer: Element = this.domElement.querySelector('#idBuildingName');
+                listContainer.innerHTML = html;
+              });
           });
-      });
+        resolve(this.ListOfBuildings);
+
+      }
+      catch (error) {
+        console.log(error);
+        reject(error);
+      }
+    });
+
   }
 
   private _populateLocation() {
@@ -910,7 +915,6 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
                 "AttachmentFileContent": file.AttachmentFileContent
               });
             });
-            console.log(fileInfos);
             this._populateDownloadInfos();
           }
 
@@ -1067,6 +1071,7 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
 
         //Check if this is a new application and if servicing/test is true
         if ($('#servicingRequired').is(':checked') && !this._checkURLParameter()) {
+          console.log("Check if this is a new application and if servicing/test is true");
           sp.web.lists.getByTitle("Asset Servicing").items.add({ Title: `${refNo}`, ContentTypeId: "0x0120" })
             .then((resp) => {
               FolderID = resp.data.ID;
@@ -1087,7 +1092,8 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
                 Building: $("#idBuildingName").val(),
                 Office: $("#idOffice").val(),
                 Floor: $("#idFloor").val(),
-                ReminderSent: false
+                ReminderSent: false,
+                ActiveFlag: true
               })
                 .then((item: any) => {
                   sp.web
@@ -1099,6 +1105,7 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
         }
         //Check if an existing asset is being updated and if servicing/test is true
         else if ($('#servicingRequired').is(':checked') && this._checkURLParameter()) {
+          console.log("Check if an existing asset is being updated and if servicing/test is true");
           this.context.spHttpClient.get(`${this.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('Asset Servicing')/items?$select=*&$filter=AssetRefNo eq '${refNo}'`, SPHttpClient.configurations.v1)
             .then(response => {
               return response.json()
@@ -1114,12 +1121,10 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
                       if (this._strCompare(strItemLSD, strLSD) == 0 || itemF.ServicingPeriod.toString() != servicingPeriod) {
                         //Check if reminder has already been sent
                         if (itemF.ReminderSent) {
-                          console.log("In if");
                           //Create new line in folder
                           newTitle = this.folderItemGUID;
                         }
                         else {
-                          console.log("In else");
                           //Update existing line in folder
                           newTitle = itemF.Title;
                         }
@@ -1135,7 +1140,8 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
                           Building: $("#idBuildingName").val(),
                           Office: $("#idOffice").val(),
                           Floor: $("#idFloor").val(),
-                          ReminderSent: false
+                          ReminderSent: false,
+                          ActiveFlag: true
                         })
                           .then((item: any) => {
                             sp.web
@@ -1149,7 +1155,6 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
                   }
                   //If folder doesn't exist
                   else {
-                    console.log("Folder doesn't exist");
                     sp.web.lists.getByTitle("Asset Servicing").items.add({ Title: `${refNo}`, ContentTypeId: "0x0120" })
                       .then((resp) => {
                         FolderID = resp.data.ID;
@@ -1170,7 +1175,8 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
                           Building: $("#idBuildingName").val(),
                           Office: $("#idOffice").val(),
                           Floor: $("#idFloor").val(),
-                          ReminderSent: false
+                          ReminderSent: false,
+                          ActiveFlag: true
                         })
                           .then((item: any) => {
                             sp.web
@@ -1179,6 +1185,55 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
                             console.log("Item added to folder.");
                           });
                       });
+                  }
+                });
+            });
+        }
+        //Check if servicing is no and if asset is being updated
+        else if ($('#servicingNotRequired').is(':checked') && this._checkURLParameter()) {
+          console.log("Check if servicing is no and if asset is being updated");
+          this.context.spHttpClient.get(`${this.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('Asset Servicing')/items?$select=*&$filter=AssetRefNo eq '${refNo}'`, SPHttpClient.configurations.v1)
+            .then(response => {
+              return response.json()
+                .then((items: any): void => {
+                  //Check if folder exists
+                  if (items["value"].length > 0) {
+                    items["value"].forEach((itemF: any) => {
+                      var strItemLSD = itemF.LastServicingDate.substring(0, 10);
+                      var strLSD = lastServicingDate.toString().substring(0, 10);
+                      newTitle = this.folderItemGUID;
+
+                      //Check if last servicing date or servicing period has been updated
+                      if (this._strCompare(strItemLSD, strLSD) == 0 || itemF.ServicingPeriod.toString() != servicingPeriod) {
+                        //Check if reminder has already been sent
+                        if (!itemF.ReminderSent) {
+                          //Update existing line in folder
+                          newTitle = itemF.Title;
+
+                        sp.web.lists.getByTitle("Asset Servicing").items.add({
+                          Title: newTitle.toString(),
+                          AssetRefNo: refNo,
+                          AssetName: $("#idAssetName").val(),
+                          LastServicingDate: itemF.LastServicingDate,
+                          ServicingPeriod: itemF.ServicingPeriod,
+                          NextServicingDate: itemF.NextServicingDate,
+                          EmailSendDate: itemF.EmailSendDate,
+                          Building: $("#idBuildingName").val(),
+                          Office: $("#idOffice").val(),
+                          Floor: $("#idFloor").val(),
+                          ReminderSent: false,
+                          ActiveFlag: false
+                        })
+                          .then((item: any) => {
+                            sp.web
+                              .getFileByServerRelativeUrl(`${listUri}/${item.data.ID}_.000`)
+                              .moveTo(`${listUri}/${folderID}_.000/${newTitle}`);
+                            console.log("Item added to folder UPDATED VERSION.");
+                          });
+                        }
+                      }
+                      resolve(folderID.toString());
+                    });
                   }
                 });
             });
@@ -1243,16 +1298,12 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
       try {
         fileInfos.forEach(async (file: any) => {
           var fileExtension: string = file.AttachmentFileName.substr(file.AttachmentFileName.lastIndexOf(".") + 1);
-          var strDecoded = atob(file.AttachmentFileContent);
-          console.log("fileContentType: " + mime.lookup(`${fileExtension}`));
-          console.log("strDecoded: " + strDecoded);
           await fileDownloadInfos.push({
             "linkSource": `data:${mime.lookup(`${fileExtension}`)};base64,${file.AttachmentFileContent}`,
             "fileName": file.AttachmentFileName,
             "AttachmentGUID": file.AttachmentGUID
           });
           resolve(fileDownloadInfos);
-          console.log(fileDownloadInfos);
         });
       }
       catch (error) {
@@ -1297,26 +1348,15 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
 
     $("#tableAttachmentContainer").on('click', '.view', function () {
       try {
-        console.log("In click view");
         var trid = $(this).closest('tr').attr('id').substring(3);
         var tridFields = trid.split('_');
         var tridFileName = tridFields[0];
         var tridId = tridFields[1];
 
         if (fileDownloadInfos.length > 0) {
-          console.log("In if statement");
           fileDownloadInfos.forEach((file: any) => {
-            console.log("In foreach file");
-            console.log(file);
             var fileNameReplace = file.fileName.replace(/ /g, "");
-
-            console.log("tridFileName: " + tridFileName);
-            console.log("fileNameReplace: " + fileNameReplace);
-
-            console.log("tridId: " + tridId);
-            console.log("file.AttachmentGUID: " + file.AttachmentGUID);
             if (tridFileName == fileNameReplace && tridId == file.AttachmentGUID) {
-              console.log("in if statement");
               const linkSource = `${file.linkSource}`;
               const downloadLink = document.createElement("a");
               downloadLink.href = linkSource;
