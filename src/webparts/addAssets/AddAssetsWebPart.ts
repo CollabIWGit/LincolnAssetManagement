@@ -33,6 +33,7 @@ import * as commonConfig from "../../utils/commonConfig.json";
 //#endregion
 
 var fileInfos = [];
+var populatedFileInfos = [];
 var fileDownloadInfos = [];
 var tempFileInfos = [];
 var filestream;
@@ -909,7 +910,7 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
           $('#attachmentTable').show();
           if (fileInfos.length == 0) {
             formDetailsList.AssetAttachments.forEach(async (file: IAttachmentDetails) => {
-              await fileInfos.push({
+              await populatedFileInfos.push({
                 "AttachmentGUID": file.AttachmentGUID,
                 "AttachmentFileName": file.AttachmentFileName,
                 "AttachmentFileContent": file.AttachmentFileContent
@@ -1238,6 +1239,11 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
                 });
             });
         }
+        else {
+          folderID = "";
+          resolve(folderID.toString());
+          console.log("Nope");
+        }
       }
       catch (error) {
         console.log(error);
@@ -1296,7 +1302,7 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
   private _populateDownloadInfos() {
     return new Promise(async (resolve, reject) => {
       try {
-        fileInfos.forEach(async (file: any) => {
+        populatedFileInfos.forEach(async (file: any) => {
           var fileExtension: string = file.AttachmentFileName.substr(file.AttachmentFileName.lastIndexOf(".") + 1);
           await fileDownloadInfos.push({
             "linkSource": `data:${mime.lookup(`${fileExtension}`)};base64,${file.AttachmentFileContent}`,
@@ -1329,7 +1335,18 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
 
     fileInfos.forEach((file: any) => {
       var fileNameNoSpace = file.AttachmentFileName.replace(/ /g, "");
+      html += `<tr id="tr_${fileNameNoSpace}_${file.AttachmentGUID}"><td class="th-lg" scope="row">${file.AttachmentFileName}</td>
+      <td>
+        <ul class="list-inline m-0">
+          <li class="list-inline-item delete">
+            <button class="btn btn-secondary btn-sm rounded-circle" id="btn_${fileNameNoSpace}_${file.AttachmentGUID}" type="button" data-toggle="tooltip" data-placement="top" title="Delete"><i class="fa fa-trash"></i></button>
+          </li>
+        </ul>
+      </td></tr>`;
+    });
 
+    populatedFileInfos.forEach((file: any) => {
+      var fileNameNoSpace = file.AttachmentFileName.replace(/ /g, "");
       html += `<tr id="tr_${fileNameNoSpace}_${file.AttachmentGUID}"><td class="th-lg" scope="row">${file.AttachmentFileName}</td>
       <td>
         <ul class="list-inline m-0">
