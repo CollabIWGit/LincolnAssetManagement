@@ -1199,6 +1199,7 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
                 .then((items: any): void => {
                   //Check if folder exists
                   if (items["value"].length > 0) {
+                    console.log("Folder exists");
                     items["value"].forEach((itemF: any) => {
                       var strItemLSD = itemF.LastServicingDate.substring(0, 10);
                       var strLSD = lastServicingDate.toString().substring(0, 10);
@@ -1235,6 +1236,10 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
                       }
                       resolve(folderID.toString());
                     });
+                  }
+                  else {
+                    console.log("Folder does not exist");
+                    resolve(folderID.toString());
                   }
                 });
             });

@@ -458,6 +458,7 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
       selectedBuildingArr = [];
       selectedOfficeArr = [];
 
+      console.log("In _getAssetsByFilters");
       $('#locationFilters input:checked').each(function () {
         selectedLocationArr.push($(this).attr('name'));
       });
@@ -469,6 +470,10 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
       $('#officeFilters input:checked').each(function () {
         selectedOfficeArr.push($(this).attr('name'));
       });
+
+      console.log(selectedLocationArr);
+      console.log(selectedBuildingArr);
+      console.log(selectedOfficeArr);
 
       if (selectedLocationArr.length > 0) {
         selectedLocationArr.forEach((location: string) => {
@@ -502,6 +507,8 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
         },
         success: (result) => {
           this.assetByFilterList = result;
+          console.log("result");
+          console.log(result);
           this._getListOfRefNo();
         },
         error: (result) => {
@@ -900,11 +907,26 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
         </thead>
         <tbody id="tb_asset_list">`;
 
+      console.log("In render table");
+      console.log("listOfAssets:");
+      console.log(listOfAssets);
+
+      var lastServicingDate;
+      var nextServicingDate;
+
       listOfAssets.forEach((item: IDynamicField) => {
         if(item.ServicingRequired) {
-          var lastServicingDate = item.LastServicingDate.substring(0, 10);
-          var lastServicingDateFormatted = moment(lastServicingDate, "YYYY-MM-DD").format('DD/MM/YYYY');
-          var nextServicingDate = moment(lastServicingDateFormatted, "DD/MM/YYYY").add(item.ServicingPeriod, 'months').format('DD/MM/YYYY');
+          if(item.LastServicingDate != null) {
+            console.log("In if");
+            lastServicingDate = item.LastServicingDate.substring(0, 10);
+            var lastServicingDateFormatted = moment(lastServicingDate, "YYYY-MM-DD").format('DD/MM/YYYY');
+            nextServicingDate = moment(lastServicingDateFormatted, "DD/MM/YYYY").add(item.ServicingPeriod, 'months').format('DD/MM/YYYY');
+          }
+          else {
+            console.log("In else");
+            lastServicingDateFormatted = "N/A";
+            nextServicingDate = "N/A";
+          }
           html += `
           <tr>
             <td class="text-left">${item.TypeOfAsset}</td>
