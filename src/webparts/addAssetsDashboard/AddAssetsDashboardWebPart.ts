@@ -149,6 +149,7 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
             <div class="col-lg-12">
               <div class="navnav">
                 <a href="#menu-toggle" class="btn btn-default" id="menu-toggle"><i class="fas fa-align-justify"></i></a>
+                <button type="button" class="btn btn-sm" id="btnAddAsset"><i class="fa fa-plus"></i> Add asset</button>
               </div>
               <nav class="navbar navbar-expand-lg navbar-dark bg-dark" id="navnavr">
                 <div class="container-fluid">
@@ -287,7 +288,7 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
   }
 
   private _navigateToAddAssetForm() {
-    $('#btnAdd').on('click', () => {
+    $('#btnAddAsset').on('click', () => {
       Navigation.navigate(`${this.context.pageContext.web.absoluteUrl}/SitePages/${commonConfig.Page.AddAssets}`, true);
     });
   }

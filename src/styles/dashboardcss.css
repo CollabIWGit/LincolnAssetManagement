@@ -144,3 +144,14 @@ hr.lineBreak {
 .tbl_OfficeList {
   border: none;
 }
+
+#btnAddAsset{
+  color: #f0a500;
+  background-color: #f8f8f8;
+}
+
+#btnAddAsset:hover{
+  color: #fff;
+  background-color: #f0a500;
+  border-color: #f0a500;
+}
