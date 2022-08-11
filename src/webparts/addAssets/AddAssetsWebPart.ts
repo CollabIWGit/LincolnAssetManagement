@@ -197,7 +197,7 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
                           <h7>Building Location <span class="required" id="requiredBuildingLocation">*</span></h7>
                         </div>
                         <div class="input-group">
-                          <input type="text" id="idBuildingLocation" autocomplete="off"/> 
+                          <input type="text" id="idBuildingLocation" readonly autocomplete="off"/> 
                         </div>
                       </div>
                     </div>

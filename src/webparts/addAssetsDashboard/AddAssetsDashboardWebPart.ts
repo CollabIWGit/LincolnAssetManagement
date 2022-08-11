@@ -1133,18 +1133,32 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
     if (allFilters != null) {
 
       var splitedFilters = allFilters.split('&');
-      var locationFilter = splitedFilters[0].split('=')[1].split(','); //array of locations
-      var buildingFilter = splitedFilters[1].split('=')[1].split(','); //array of buildings
-      var officeFilter = splitedFilters[2].split('=')[1].split(','); //array of offices
-      var refNoFilter = splitedFilters[3].split('=')[1];
-      var typeOfAssetFilter = splitedFilters[4].split('=')[1];
 
-      this.LocationsFilterFromLocalStorage = locationFilter;
-      this.BuildingsFilterFromLocalStorage = buildingFilter;
-      this.OfficesFilterFromLocalStorage = officeFilter;
-      this.AssetRefNoFilterFromLocalStorage = refNoFilter;
-      this.TypeOfAssetFilterFromLocalStorage = typeOfAssetFilter;
+      if(splitedFilters[0] != null) {
+        var locationFilter = splitedFilters[0].split('=')[1].split(','); //array of locations
+        this.LocationsFilterFromLocalStorage = locationFilter;
+      }
 
+      if(splitedFilters[1] != null) {
+        var buildingFilter = splitedFilters[1].split('=')[1].split(','); //array of buildings
+        this.BuildingsFilterFromLocalStorage = buildingFilter;
+      }
+
+      if(splitedFilters[2] != null) {
+        var officeFilter = splitedFilters[2].split('=')[1].split(','); //array of offices
+        this.OfficesFilterFromLocalStorage = officeFilter;
+      }
+
+      if(splitedFilters[3] != null) {
+        var refNoFilter = splitedFilters[3].split('=')[1];
+        this.AssetRefNoFilterFromLocalStorage = refNoFilter;
+      }
+
+      if(splitedFilters[4] != null) {
+        var typeOfAssetFilter = splitedFilters[4].split('=')[1];
+        this.TypeOfAssetFilterFromLocalStorage = typeOfAssetFilter;
+      }
+      
       if (this.AssetRefNoFilterFromLocalStorage != '')
         $('#myListAssetReferenceNo').val(this.AssetRefNoFilterFromLocalStorage);
 
