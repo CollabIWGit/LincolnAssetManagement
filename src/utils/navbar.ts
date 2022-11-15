@@ -85,6 +85,13 @@ export class navbar {
                     </li>
                 </ul>
             </li>
+
+            <li> 
+            <a id="report">
+            <span class="fa fa-bar-chart mr-3"> </span>Reporting
+         </a>
+            
+            </li>
         </ul>
     </div>`;
 }

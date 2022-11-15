@@ -51,6 +51,11 @@ export class navUtils {
         $('#natureOfProblem').on('click', () => {
             Navigation.navigate(`${commonConfig.url}/Lists/Nature%20of%20Problem%20List/AllItems.aspx`, true);
         });
+
+        $('#report').on('click', () => {
+            Navigation.navigate(`${commonConfig.urlDevtest}/SitePages/${commonConfig.Page.reporting}`, true);
+        });
+
     }
 
     public collapse() {

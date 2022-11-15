@@ -6,7 +6,8 @@
         "AddAssets" : "Asset-Mngt.aspx",
         "AssetList" : "Asset-Mngt-Dashboard.aspx",
         "AddUser" : "User-Management.aspx",
-        "UsersList" : "Users-List.aspx"
+        "UsersList" : "Users-List.aspx",
+        "reporting" : "Reporting.aspx"
     },
     "List" : {
         "TypeOfAssetList" : "Types Of Assets",
@@ -15,5 +16,6 @@
         "BuildingList" : "Buildings"
     },
     "baseUrl" : "https://api-lincoln.azurewebsites.net",
-    "url" : "https://lincolnrealtymu.sharepoint.com/sites/Lincoln"
+    "url" : "https://lincolnrealtymu.sharepoint.com/sites/Lincoln",
+    "urlDevtest" :  "https://frcidevtest.sharepoint.com/sites/CaseMgt"
 }

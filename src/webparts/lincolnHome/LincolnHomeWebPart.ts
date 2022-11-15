@@ -76,6 +76,18 @@ export default class LincolnHomeWebPart extends BaseClientSideWebPart<ILincolnHo
                           </div>
                         </div>
                       </div>
+                    
+
+                      <div id="reporting" class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-6">
+                      <div class="mdc-card py-3 pl-2 d-flex flex-row align-item-center dashboardCard">
+                        <div class="mdc--tile mdc--tile-success rounded">
+                          <i class="fa fa-user fa-fw text-white icon-md"></i>
+                        </div>
+                        <div class="text-wrapper pl-1">
+                          <h6 class="mdc-typography--display1 font-weight-bold mb-1">Reporting</h6>
+                        </div>
+                      </div>
+                    </div>
 
                     </div>
                   </div>
@@ -96,6 +108,7 @@ export default class LincolnHomeWebPart extends BaseClientSideWebPart<ILincolnHo
 		document.getElementById('caseMgt').addEventListener('click', () => this._navigateToCaseMgt());
     document.getElementById('assetMgt').addEventListener('click', () => this._navigateToAssetMgt());
     document.getElementById('userMgt').addEventListener('click', () => this._navigateToUserMgt());
+    document.getElementById('reporting').addEventListener('click', () => this._navigateReporting());
 	}
 
   private _navigateToCaseMgt() {
@@ -108,6 +121,10 @@ export default class LincolnHomeWebPart extends BaseClientSideWebPart<ILincolnHo
 
   private _navigateToUserMgt() {
     Navigation.navigate(`${this.context.pageContext.web.absoluteUrl}/SitePages/${commonConfig.Page.UsersList}`, true);
+  }
+
+  private _navigateReporting() {
+    Navigation.navigate(`${this.context.pageContext.web.absoluteUrl}/SitePages/${commonConfig.Page.reporting}`, true);
   }
 
   protected get dataVersion(): Version {
