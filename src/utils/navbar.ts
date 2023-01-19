@@ -88,7 +88,7 @@ export class navbar {
 
             <li> 
             <a id="report">
-                <span class="fa fa-chart-area mr-3"> </span>Reporting
+                <span class="fa fa-bar-chart mr-3"> </span>Reporting
             </a>
             
             </li>
