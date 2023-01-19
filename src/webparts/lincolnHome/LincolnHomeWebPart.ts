@@ -77,7 +77,6 @@ export default class LincolnHomeWebPart extends BaseClientSideWebPart<ILincolnHo
                         </div>
                       </div>
                     
-
                       <div id="reporting" class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-6">
                       <div class="mdc-card py-3 pl-2 d-flex flex-row align-item-center dashboardCard">
                         <div class="mdc--tile mdc--tile-purple rounded">
