@@ -54,7 +54,7 @@ export class navUtils {
 
         $('#report').on('click', () => {
             // Navigation.navigate(`${commonConfig.urlDevtest}/SitePages/${commonConfig.Page.reporting}`, true);
-            window.open(`${commonConfig.url}/SitePages/${commonConfig.Page.reporting}`, '_blank');
+            window.open(`${commonConfig.url}/SitePages/${commonConfig.Page.reporting}`, '_self');
         });
 
     }
