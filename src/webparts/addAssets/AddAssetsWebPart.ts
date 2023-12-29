@@ -130,6 +130,7 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
   public fileGUID: Guid;
   public folderItemGUID: Guid;
   private mainFileByteArray = [];
+  // private countList: number = 0;
 
   protected onInit(): Promise<void> {
 
@@ -564,12 +565,36 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
     });
   }
 
+  private _getListCount(listName: string): Promise<number> {
+    let countList: number = 0;
+
+    return new Promise(async (resolve, reject) => {
+      try {
+        this.context.spHttpClient.get(`${this.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('${listName}')/ItemCount`, SPHttpClient.configurations.v1)
+          .then(async response => {
+            await response.json().then((responseJSON) => {
+              countList = parseInt(responseJSON.value.toString());
+              resolve(countList);
+              // console.log("Count 1: " + countList);
+            });
+          });
+      }
+      catch (error) {
+        console.log(error);
+        reject(error);
+      }
+    });
+  }
+
   //#region GETs and populate dropdowns
-  private _getBuildingsList() {
+  private async _getBuildingsList() {
+    let countlst: number = await this._getListCount(commonConfig.List.BuildingList);
+    console.log("Check B count: " + countlst);
+    
     let html: string = '';
     return new Promise(async (resolve, reject) => {
       try {
-        this.context.spHttpClient.get(`${this.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('${commonConfig.List.BuildingList}')/items`, SPHttpClient.configurations.v1)
+        this.context.spHttpClient.get(`${this.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('${commonConfig.List.BuildingList}')/items?$top=${countlst}`, SPHttpClient.configurations.v1)
           .then(response => {
             return response.json()
               .then((items: any): void => {
@@ -609,8 +634,11 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
     });
   }
 
-  private _getOfficesList() {
-    this.context.spHttpClient.get(`${this.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('${commonConfig.List.OfficeList}')/items`, SPHttpClient.configurations.v1)
+  private async _getOfficesList() {
+    let countlst: number = await this._getListCount(commonConfig.List.OfficeList);
+    console.log("Check O count: " + countlst);
+
+    this.context.spHttpClient.get(`${this.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('${commonConfig.List.OfficeList}')/items?$top=${countlst}`, SPHttpClient.configurations.v1)
       .then(response => {
         return response.json()
           .then((items: any): void => {
@@ -1212,26 +1240,26 @@ export default class AddAssetsWebPart extends BaseClientSideWebPart<IAddAssetsWe
                           //Update existing line in folder
                           newTitle = itemF.Title;
 
-                        sp.web.lists.getByTitle("Asset Servicing").items.add({
-                          Title: newTitle.toString(),
-                          AssetRefNo: refNo,
-                          AssetName: $("#idAssetName").val(),
-                          LastServicingDate: itemF.LastServicingDate,
-                          ServicingPeriod: itemF.ServicingPeriod,
-                          NextServicingDate: itemF.NextServicingDate,
-                          EmailSendDate: itemF.EmailSendDate,
-                          Building: $("#idBuildingName").val(),
-                          Office: $("#idOffice").val(),
-                          Floor: $("#idFloor").val(),
-                          ReminderSent: false,
-                          ActiveFlag: false
-                        })
-                          .then((item: any) => {
-                            sp.web
-                              .getFileByServerRelativeUrl(`${listUri}/${item.data.ID}_.000`)
-                              .moveTo(`${listUri}/${folderID}_.000/${newTitle}`);
-                            console.log("Item added to folder UPDATED VERSION.");
-                          });
+                          sp.web.lists.getByTitle("Asset Servicing").items.add({
+                            Title: newTitle.toString(),
+                            AssetRefNo: refNo,
+                            AssetName: $("#idAssetName").val(),
+                            LastServicingDate: itemF.LastServicingDate,
+                            ServicingPeriod: itemF.ServicingPeriod,
+                            NextServicingDate: itemF.NextServicingDate,
+                            EmailSendDate: itemF.EmailSendDate,
+                            Building: $("#idBuildingName").val(),
+                            Office: $("#idOffice").val(),
+                            Floor: $("#idFloor").val(),
+                            ReminderSent: false,
+                            ActiveFlag: false
+                          })
+                            .then((item: any) => {
+                              sp.web
+                                .getFileByServerRelativeUrl(`${listUri}/${item.data.ID}_.000`)
+                                .moveTo(`${listUri}/${folderID}_.000/${newTitle}`);
+                              console.log("Item added to folder UPDATED VERSION.");
+                            });
                         }
                       }
                       resolve(folderID.toString());

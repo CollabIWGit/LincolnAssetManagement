@@ -373,9 +373,33 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
     }
   }
 
-  private _getAllOffices() {
+  private _getListCount(listName: string): Promise<number> {
+    let countList: number = 0;
+
+    return new Promise(async (resolve, reject) => {
+      try {
+        this.context.spHttpClient.get(`${this.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('${listName}')/ItemCount`, SPHttpClient.configurations.v1)
+          .then(async response => {
+            await response.json().then((responseJSON) => {
+              countList = parseInt(responseJSON.value.toString());
+              resolve(countList);
+              // console.log("Count 1: " + countList);
+            });
+          });
+      }
+      catch (error) {
+        console.log(error);
+        reject(error);
+      }
+    });
+  }
+
+  private async _getAllOffices() {
     try {
-      this.context.spHttpClient.get(`${this.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('${commonConfig.List.OfficeList}')/items`, SPHttpClient.configurations.v1)
+      let countlst: number = await this._getListCount(commonConfig.List.OfficeList);
+      console.log("Check O count: " + countlst);
+
+      this.context.spHttpClient.get(`${this.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('${commonConfig.List.OfficeList}')/items?$top=${countlst}`, SPHttpClient.configurations.v1)
         .then(response => {
           return response.json()
             .then((items: any): void => {
@@ -391,7 +415,7 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
                 buildingIDList.forEach((buildingID: number) => {
                   this.ListOfOffices.forEach((office: IOffices) => {
                     if (buildingID == office.BuildingIDId) {
-                      if(jQuery.inArray(office.Title, filteredOfficeName) == -1) {
+                      if (jQuery.inArray(office.Title, filteredOfficeName) == -1) {
                         filteredOfficeName.push(office.Title);
                       }
                     }
@@ -410,8 +434,11 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
     }
   }
 
-  private _getBuildingAndLocationList() {
+  private async _getBuildingAndLocationList() {
     try {
+      let countlst: number = await this._getListCount(commonConfig.List.BuildingList);
+      console.log("Check B count: " + countlst);
+
       this.context.spHttpClient.get(`${this.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('${commonConfig.List.BuildingList}')/items`, SPHttpClient.configurations.v1)
         .then(response => {
           return response.json()
@@ -467,7 +494,7 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
       $('#buildingFilters input:checked').each(function () {
         selectedBuildingArr.push($(this).attr('name'));
       });
-  
+
       $('#officeFilters input:checked').each(function () {
         selectedOfficeArr.push($(this).attr('name'));
       });
@@ -720,7 +747,7 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
     filteredTypeOfAsset = [];
     filteredAssetRefNo = [];
 
-    if(selectedBuildingArr.length > 0) {
+    if (selectedBuildingArr.length > 0) {
       selectedBuildingArr.forEach((buildingName: string) => {
         this.ListOfBuildings.forEach((building: IBuildings) => {
           if (building.Title == buildingName) {
@@ -916,8 +943,8 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
       var nextServicingDate;
 
       listOfAssets.forEach((item: IDynamicField) => {
-        if(item.ServicingRequired) {
-          if(item.LastServicingDate != null) {
+        if (item.ServicingRequired) {
+          if (item.LastServicingDate != null) {
             console.log("In if");
             lastServicingDate = item.LastServicingDate.substring(0, 10);
             var lastServicingDateFormatted = moment(lastServicingDate, "YYYY-MM-DD").format('DD/MM/YYYY');
@@ -960,7 +987,7 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
           </tr>`;
         }
       });
-        
+
       html += `</tbody>
       </table>`;
 
@@ -1134,31 +1161,31 @@ export default class AddAssetsDashboardWebPart extends BaseClientSideWebPart<IAd
 
       var splitedFilters = allFilters.split('&');
 
-      if(splitedFilters[0] != null) {
+      if (splitedFilters[0] != null) {
         var locationFilter = splitedFilters[0].split('=')[1].split(','); //array of locations
         this.LocationsFilterFromLocalStorage = locationFilter;
       }
 
-      if(splitedFilters[1] != null) {
+      if (splitedFilters[1] != null) {
         var buildingFilter = splitedFilters[1].split('=')[1].split(','); //array of buildings
         this.BuildingsFilterFromLocalStorage = buildingFilter;
       }
 
-      if(splitedFilters[2] != null) {
+      if (splitedFilters[2] != null) {
         var officeFilter = splitedFilters[2].split('=')[1].split(','); //array of offices
         this.OfficesFilterFromLocalStorage = officeFilter;
       }
 
-      if(splitedFilters[3] != null) {
+      if (splitedFilters[3] != null) {
         var refNoFilter = splitedFilters[3].split('=')[1];
         this.AssetRefNoFilterFromLocalStorage = refNoFilter;
       }
 
-      if(splitedFilters[4] != null) {
+      if (splitedFilters[4] != null) {
         var typeOfAssetFilter = splitedFilters[4].split('=')[1];
         this.TypeOfAssetFilterFromLocalStorage = typeOfAssetFilter;
       }
-      
+
       if (this.AssetRefNoFilterFromLocalStorage != '')
         $('#myListAssetReferenceNo').val(this.AssetRefNoFilterFromLocalStorage);
 
